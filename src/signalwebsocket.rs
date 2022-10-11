@@ -1,26 +1,19 @@
-use futures_util::StreamExt;
 use prost::Message;
 use tokio_tungstenite::tungstenite;
-use websocket_connection::WebSocketConnection;
-use websocket_message::{webSocketMessage::Type, WebSocketMessage, WebSocketRequestMessage};
+use websocket_connection::{
+    websocket_message::{webSocketMessage::Type, WebSocketMessage, WebSocketRequestMessage},
+    WebSocketConnection,
+};
 
 mod tls;
 mod websocket_connection;
-mod websocket_message;
 
 pub async fn connect(connect_addr: &str) {
-    let ws_connection =
-        WebSocketConnection::new(connect_addr, tls::build_tls_connector().unwrap()).await;
+    let mut ws_connection = WebSocketConnection::new();
 
     ws_connection
-        .ws_read
-        .for_each(|message| async {
-            dbg!("> New message");
-            if let Ok(message) = message {
-                on_message(message)
-            }
-        })
-        .await
+        .connect(connect_addr, tls::build_tls_connector().unwrap())
+        .await;
 }
 
 fn on_message(message: tungstenite::Message) {
