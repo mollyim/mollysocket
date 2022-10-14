@@ -8,7 +8,9 @@ use tokio_tungstenite::{
     Connector::NativeTls,
 };
 
-use websocket_message::{webSocketMessage::Type, WebSocketMessage, WebSocketRequestMessage};
+use websocket_message::{
+    webSocketMessage::Type, WebSocketMessage, WebSocketRequestMessage, WebSocketResponseMessage,
+};
 
 pub mod websocket_message;
 
@@ -94,7 +96,7 @@ impl WebSocketConnection {
         let ka_connection = self.clone();
 
         thread::spawn(move || loop {
-            thread::sleep(Duration::from_secs(3));
+            thread::sleep(Duration::from_secs(30));
             println!("> Sending Keepalive");
             ka_connection.send_keepalive();
         });
@@ -103,7 +105,7 @@ impl WebSocketConnection {
         let _ = futures::join!(msg_handle, ws_handle);
     }
 
-    pub fn send(&self, message: WebSocketMessage) {
+    fn send(&self, message: WebSocketMessage) {
         if let Some(tx) = self.tx.as_ref() {
             let mut buf = Vec::new();
             buf.reserve(message.encoded_len());
@@ -125,6 +127,15 @@ impl WebSocketConnection {
                 headers: Vec::new(),
                 id: None,
             }),
+        };
+        self.send(message);
+    }
+
+    pub fn send_response(&self, response: WebSocketResponseMessage) {
+        let message = WebSocketMessage {
+            r#type: Some(Type::RESPONSE as i32),
+            response: Some(response),
+            request: None,
         };
         self.send(message);
     }
