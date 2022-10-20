@@ -1,5 +1,9 @@
 use async_trait::async_trait;
 use futures_channel::mpsc;
+use std::{
+    sync::{Arc, Mutex},
+    time::{Duration, Instant},
+};
 use tokio_tungstenite::tungstenite;
 use websocket_connection::{
     websocket_message::{
@@ -12,11 +16,13 @@ pub mod tls;
 pub mod websocket_connection;
 
 const SERVER_DELIVERED_TIMESTAMP_HEADER: &str = "X-Signal-Timestamp";
+const PUSH_TIMEOUT: Duration = Duration::from_secs(10);
 
 pub struct SignalWebSocket {
     connect_addr: url::Url,
     push_endpoint: url::Url,
     tx: Option<mpsc::UnboundedSender<tungstenite::Message>>,
+    push_instant: Arc<Mutex<Instant>>,
 }
 
 #[async_trait(?Send)]
@@ -53,6 +59,9 @@ impl SignalWebSocket {
             connect_addr,
             push_endpoint,
             tx: None,
+            push_instant: Arc::new(Mutex::new(
+                Instant::now().checked_sub(PUSH_TIMEOUT).unwrap(),
+            )),
         }
     }
     /**
@@ -61,7 +70,11 @@ impl SignalWebSocket {
     async fn on_request(&self, request: Option<WebSocketRequestMessage>) {
         if let Some(request) = request {
             if self.read_or_empty(request) {
-                self.notify().await;
+                if self.over_timeout() {
+                    self.notify().await;
+                } else {
+                    println!("Push timeout not past. Ignoring request");
+                }
             }
         }
     }
@@ -167,6 +180,10 @@ impl SignalWebSocket {
 
     async fn notify(&self) {
         println!("Notifying");
+
+        let mut instant = self.push_instant.lock().unwrap();
+        *instant = Instant::now();
+
         let url = self.push_endpoint.clone();
         let _ = reqwest::Client::new()
             .post(url)
@@ -174,5 +191,10 @@ impl SignalWebSocket {
             .body("{\"type\":\"request\"}")
             .send()
             .await;
+    }
+
+    fn over_timeout(&self) -> bool {
+        let instant = self.push_instant.lock().unwrap();
+        instant.elapsed() > PUSH_TIMEOUT
     }
 }
