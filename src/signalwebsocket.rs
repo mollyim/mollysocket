@@ -23,6 +23,7 @@ pub struct SignalWebSocket {
     push_endpoint: url::Url,
     tx: Option<mpsc::UnboundedSender<tungstenite::Message>>,
     push_instant: Arc<Mutex<Instant>>,
+    last_keepalive: Arc<Mutex<Instant>>,
 }
 
 #[async_trait(?Send)]
@@ -39,10 +40,14 @@ impl WebSocketConnection for SignalWebSocket {
         self.tx = tx
     }
 
+    fn get_last_keepalive(&self) -> Arc<Mutex<Instant>> {
+        Arc::clone(&self.last_keepalive)
+    }
+
     async fn on_message(&self, message: WebSocketMessage) {
         match message.r#type {
             Some(type_int) => match Type::from_i32(type_int) {
-                Some(Type::RESPONSE) => (),
+                Some(Type::RESPONSE) => self.on_response(message.response),
                 Some(Type::REQUEST) => self.on_request(message.request).await,
                 _ => (),
             },
@@ -62,18 +67,29 @@ impl SignalWebSocket {
             push_instant: Arc::new(Mutex::new(
                 Instant::now().checked_sub(PUSH_TIMEOUT).unwrap(),
             )),
+            last_keepalive: Arc::new(Mutex::new(Instant::now())),
         }
     }
+
+    fn on_response(&self, response: Option<WebSocketResponseMessage>) {
+        println!("  > New response");
+        if let Some(_) = response {
+            let mut last_keepalive = self.last_keepalive.lock().unwrap();
+            *last_keepalive = Instant::now()
+        }
+    }
+
     /**
      * That's when we must send a notification
      */
     async fn on_request(&self, request: Option<WebSocketRequestMessage>) {
+        println!("  > New request");
         if let Some(request) = request {
             if self.read_or_empty(request) {
                 if self.over_timeout() {
                     self.notify().await;
                 } else {
-                    println!("Push timeout not past. Ignoring request");
+                    println!("  > Push timeout not past. Ignoring request");
                 }
             }
         }
@@ -82,7 +98,7 @@ impl SignalWebSocket {
     fn read_or_empty(&self, request: WebSocketRequestMessage) -> bool {
         dbg!(&request.path);
         let response = self.create_websocket_response(&request);
-        dbg!(&response);
+        // dbg!(&response);
         if self.is_signal_service_envelope(&request) {
             let timestamp: u64 = match self.find_header(&request) {
                 Some(timestamp) => timestamp.parse().unwrap(),
@@ -179,7 +195,7 @@ impl SignalWebSocket {
     }
 
     async fn notify(&self) {
-        println!("Notifying");
+        println!("  > Notifying");
 
         let mut instant = self.push_instant.lock().unwrap();
         *instant = Instant::now();

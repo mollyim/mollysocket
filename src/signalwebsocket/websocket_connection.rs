@@ -3,7 +3,11 @@ use futures_channel::mpsc;
 use futures_util::StreamExt;
 use native_tls::TlsConnector;
 use prost::Message;
-use std::{thread, time::Duration};
+use std::{
+    sync::{Arc, Mutex},
+    thread,
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
+};
 use tokio_tungstenite::{
     tungstenite::{self, client::IntoClientRequest},
     Connector::NativeTls,
@@ -15,11 +19,15 @@ use websocket_message::{
 
 pub mod websocket_message;
 
+const KEEPALIVE: Duration = Duration::from_secs(30);
+const KEEPALIVE_TIMEOUT: Duration = Duration::from_secs(40);
+
 #[async_trait(?Send)]
 pub trait WebSocketConnection {
     fn get_url(&self) -> &url::Url;
     fn get_tx(&self) -> &Option<mpsc::UnboundedSender<tungstenite::Message>>;
     fn set_tx(&mut self, tx: Option<mpsc::UnboundedSender<tungstenite::Message>>);
+    fn get_last_keepalive(&self) -> Arc<Mutex<Instant>>;
     async fn on_message(&self, message: WebSocketMessage);
 
     async fn connect(&mut self, tls_connector: TlsConnector) {
@@ -47,36 +55,41 @@ pub trait WebSocketConnection {
         self.set_tx(Some(tx));
         let msg_handle = rx.map(Ok).forward(ws_write);
 
-        let ws_handle = {
-            ws_read.for_each(|message| async {
-                println!("> New message");
-                if let Ok(message) = message {
-                    let data = message.into_data();
-                    let ws_message = match WebSocketMessage::decode(&data[..]) {
-                        Err(_) => {
-                            println!("Can't decode msg");
-                            return ();
-                        }
-                        Ok(msg) => msg,
-                    };
-                    self.on_message(ws_message).await;
-                }
-            })
-        };
+        let ws_handle = ws_read.for_each(|message| async {
+            println!("> New message");
+            if let Ok(message) = message {
+                let data = message.into_data();
+                let ws_message = match WebSocketMessage::decode(&data[..]) {
+                    Err(_) => {
+                        println!("Can't decode msg");
+                        return ();
+                    }
+                    Ok(msg) => msg,
+                };
+                self.on_message(ws_message).await;
+            }
+        });
 
         // keepalive : channel, handler + thread
         let (timer_tx, timer_rx) = mpsc::unbounded();
+        let (abort_tx, abort_rx) = mpsc::unbounded();
 
         let keepalive_handle = timer_rx.for_each(|_| async { self.send_keepalive() });
+        let abort_handle = abort_rx.for_each(|_| async { panic!("Aborting.") });
 
+        let last_keepalive = self.get_last_keepalive();
         thread::spawn(move || loop {
-            thread::sleep(Duration::from_secs(30));
+            if last_keepalive.lock().unwrap().elapsed() > KEEPALIVE_TIMEOUT {
+                println!("Did not receive the last keepalive.");
+                abort_tx.unbounded_send(true).unwrap();
+            }
+            thread::sleep(KEEPALIVE);
             println!("> Sending Keepalive");
-            let _ = timer_tx.unbounded_send(true);
+            timer_tx.unbounded_send(true).unwrap();
         });
 
         // handle websocket
-        let _ = futures::join!(msg_handle, ws_handle, keepalive_handle);
+        let _ = futures::join!(msg_handle, ws_handle, keepalive_handle, abort_handle);
     }
 
     fn send(&self, message: WebSocketMessage) {
@@ -99,7 +112,12 @@ pub trait WebSocketConnection {
                 path: Some(String::from("/v1/keepalive")),
                 body: None,
                 headers: Vec::new(),
-                id: None,
+                id: Some(
+                    SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_millis() as u64,
+                ),
             }),
         };
         self.send(message);
