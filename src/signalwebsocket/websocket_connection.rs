@@ -1,8 +1,9 @@
+use async_trait::async_trait;
 use futures_channel::mpsc;
 use futures_util::StreamExt;
 use native_tls::TlsConnector;
 use prost::Message;
-use std::{sync::Arc, thread, time::Duration};
+use std::{thread, time::Duration};
 use tokio_tungstenite::{
     tungstenite::{self, client::IntoClientRequest},
     Connector::NativeTls,
@@ -14,43 +15,15 @@ use websocket_message::{
 
 pub mod websocket_message;
 
-pub struct WebSocketConnection {
-    tx: Option<mpsc::UnboundedSender<tungstenite::Message>>,
-    fn_on_message: Option<Arc<dyn Fn(&Self, WebSocketMessage) + Send + Sync>>,
-}
+#[async_trait(?Send)]
+pub trait WebSocketConnection {
+    fn get_url(&self) -> &url::Url;
+    fn get_tx(&self) -> &Option<mpsc::UnboundedSender<tungstenite::Message>>;
+    fn set_tx(&mut self, tx: Option<mpsc::UnboundedSender<tungstenite::Message>>);
+    async fn on_message(&self, message: WebSocketMessage);
 
-impl Clone for WebSocketConnection {
-    fn clone(&self) -> WebSocketConnection {
-        WebSocketConnection {
-            tx: self.tx.clone(),
-            fn_on_message: match &self.fn_on_message {
-                Some(f) => Some(Arc::clone(&f)),
-                None => None,
-            },
-        }
-    }
-}
-
-impl WebSocketConnection {
-    pub fn new() -> WebSocketConnection {
-        WebSocketConnection {
-            tx: None,
-            fn_on_message: None,
-        }
-    }
-
-    pub fn set_on_message(
-        &mut self,
-        fn_on_message: Option<Arc<dyn Fn(&Self, WebSocketMessage) + Send + Sync>>,
-    ) {
-        self.fn_on_message = fn_on_message;
-    }
-
-    pub async fn connect(&mut self, connect_addr: &str, tls_connector: TlsConnector) {
-        let mut request = url::Url::parse(&connect_addr)
-            .expect("Failed to parse URL")
-            .into_client_request()
-            .unwrap();
+    async fn connect(&mut self, tls_connector: TlsConnector) {
+        let mut request = self.get_url().into_client_request().unwrap();
 
         request
             .headers_mut()
@@ -71,42 +44,43 @@ impl WebSocketConnection {
 
         // channel to websocket ws_write
         let (tx, rx) = mpsc::unbounded();
-        self.tx = Some(tx);
+        self.set_tx(Some(tx));
         let msg_handle = rx.map(Ok).forward(ws_write);
 
         let ws_handle = {
             ws_read.for_each(|message| async {
                 println!("> New message");
                 if let Ok(message) = message {
-                    if let Some(on_message) = &self.fn_on_message {
-                        let data = message.into_data();
-                        let ws_message = match WebSocketMessage::decode(&data[..]) {
-                            Err(_) => {
-                                println!("Can't decode msg");
-                                return ();
-                            }
-                            Ok(msg) => msg,
-                        };
-                        on_message(&self, ws_message);
-                    }
+                    let data = message.into_data();
+                    let ws_message = match WebSocketMessage::decode(&data[..]) {
+                        Err(_) => {
+                            println!("Can't decode msg");
+                            return ();
+                        }
+                        Ok(msg) => msg,
+                    };
+                    self.on_message(ws_message).await;
                 }
             })
         };
 
-        let ka_connection = self.clone();
+        // keepalive : channel, handler + thread
+        let (timer_tx, timer_rx) = mpsc::unbounded();
+
+        let keepalive_handle = timer_rx.for_each(|_| async { self.send_keepalive() });
 
         thread::spawn(move || loop {
             thread::sleep(Duration::from_secs(30));
             println!("> Sending Keepalive");
-            ka_connection.send_keepalive();
+            let _ = timer_tx.unbounded_send(true);
         });
 
         // handle websocket
-        let _ = futures::join!(msg_handle, ws_handle);
+        let _ = futures::join!(msg_handle, ws_handle, keepalive_handle);
     }
 
     fn send(&self, message: WebSocketMessage) {
-        if let Some(tx) = self.tx.as_ref() {
+        if let Some(tx) = self.get_tx().as_ref() {
             let mut buf = Vec::new();
             buf.reserve(message.encoded_len());
             message.encode(&mut buf).unwrap();
@@ -131,7 +105,7 @@ impl WebSocketConnection {
         self.send(message);
     }
 
-    pub fn send_response(&self, response: WebSocketResponseMessage) {
+    fn send_response(&self, response: WebSocketResponseMessage) {
         let message = WebSocketMessage {
             r#type: Some(Type::RESPONSE as i32),
             response: Some(response),

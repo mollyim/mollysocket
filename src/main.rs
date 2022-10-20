@@ -1,13 +1,13 @@
 use std::env;
 use std::process;
 
-use crate::signalwebsocket::connect;
+use crate::signalwebsocket::{tls, websocket_connection::WebSocketConnection, SignalWebSocket};
 
 pub mod signalwebsocket;
 
 fn usage() {
     println!(
-        "Usage: {} wss://your.server.tld/path",
+        "Usage: {} wss://signal.server.tld/path https://push.server.ltd/id",
         env::args().nth(0).unwrap()
     );
 }
@@ -18,5 +18,11 @@ async fn main() {
         usage();
         process::exit(0)
     });
-    connect(&connect_addr).await;
+    let push_endpoint = env::args().nth(2).unwrap_or_else(|| {
+        usage();
+        process::exit(0)
+    });
+    SignalWebSocket::new(connect_addr, push_endpoint)
+        .connect(tls::build_tls_connector().unwrap())
+        .await
 }
