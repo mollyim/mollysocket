@@ -86,13 +86,13 @@ impl SignalWebSocket {
                 }
             }
             count += 1;
-            println!("> Retrying in {}0 secondes.", count);
+            log::info!("Retrying to connect in {}0 secondes.", count);
             task::sleep(Duration::from_secs(count * 10)).await;
         }
     }
 
     fn on_response(&self, response: Option<WebSocketResponseMessage>) {
-        println!("  > New response");
+        log::debug!("New response");
         if let Some(_) = response {
             let mut keepalive = self.last_keepalive.lock().unwrap();
             *keepalive = Instant::now()
@@ -103,20 +103,20 @@ impl SignalWebSocket {
      * That's when we must send a notification
      */
     async fn on_request(&self, request: Option<WebSocketRequestMessage>) {
-        println!("  > New request");
+        log::info!("New request");
         if let Some(request) = request {
             if self.read_or_empty(request) {
-                if self.over_timeout() {
+                if self.waiting_timeout_reached() {
                     self.notify().await;
                 } else {
-                    println!("  > Push timeout not past. Ignoring request");
+                    log::debug!("The waiting timeout is not reached: the request is ignored.");
                 }
             }
         }
     }
 
     fn read_or_empty(&self, request: WebSocketRequestMessage) -> bool {
-        dbg!(&request.path);
+        // dbg!(&request.path);
         let response = self.create_websocket_response(&request);
         // dbg!(&response);
         if self.is_signal_service_envelope(&request) {
@@ -167,7 +167,7 @@ impl SignalWebSocket {
     }
 
     async fn notify(&self) {
-        println!("  > Notifying");
+        log::debug!("  > Notifying");
         {
             let mut instant = self.push_instant.lock().unwrap();
             *instant = Instant::now();
@@ -182,7 +182,7 @@ impl SignalWebSocket {
             .await;
     }
 
-    fn over_timeout(&self) -> bool {
+    fn waiting_timeout_reached(&self) -> bool {
         let instant = self.push_instant.lock().unwrap();
         instant.elapsed() > PUSH_TIMEOUT
     }

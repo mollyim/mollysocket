@@ -13,6 +13,7 @@ fn usage() {
 
 #[tokio::main]
 async fn main() {
+    env_logger::init();
     let connect_addr = env::args().nth(1).unwrap_or_else(|| {
         usage();
         process::exit(0)

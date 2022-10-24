@@ -45,7 +45,7 @@ pub trait WebSocketConnection {
         .await
         .expect("Failed to connect");
 
-        println!("WebSocket handshake has been successfully completed");
+        log::info!("WebSocket handshake has been successfully completed");
 
         // Websocket I/O
         let (ws_write, ws_read) = ws_stream.split();
@@ -62,7 +62,7 @@ pub trait WebSocketConnection {
 
         let from_ws_handle = ws_read
             .for_each(|message| async {
-                println!("> New message");
+                log::debug!("New message");
                 if let Ok(message) = message {
                     self.handle_message(message).await;
                 }
@@ -84,10 +84,10 @@ pub trait WebSocketConnection {
 
         // handle websocket
         futures::select!(
-            _ = to_ws_handle => println!("Messages finished"),
-            _ = from_ws_handle => println!("Websocket finished"),
-            _ = from_keepalive_handle => println!("Keepalive finished"),
-            _ = to_keepalive_handle => println!("Keepalive finished"),
+            _ = to_ws_handle => log::warn!("Messages finished"),
+            _ = from_ws_handle => log::warn!("Websocket finished"),
+            _ = from_keepalive_handle => log::warn!("Keepalive finished"),
+            _ = to_keepalive_handle => log::warn!("Keepalive finished"),
         );
     }
 
@@ -95,7 +95,7 @@ pub trait WebSocketConnection {
         let data = message.into_data();
         let ws_message = match WebSocketMessage::decode(&data[..]) {
             Err(_) => {
-                println!("Can't decode msg");
+                log::warn!("Can't decode msg");
                 return ();
             }
             Ok(msg) => msg,
@@ -107,11 +107,11 @@ pub trait WebSocketConnection {
         let last_keepalive = self.get_last_keepalive();
         loop {
             if last_keepalive.lock().unwrap().elapsed() > KEEPALIVE_TIMEOUT {
-                println!("Did not receive the last keepalive.");
+                log::warn!("Did not receive the last keepalive: aborting.");
                 break;
             }
             task::sleep(KEEPALIVE).await;
-            println!("> Sending Keepalive");
+            log::debug!("Sending Keepalive");
             timer_tx.unbounded_send(true).unwrap();
         }
     }
@@ -127,7 +127,7 @@ pub trait WebSocketConnection {
     }
 
     fn send_keepalive(&self) {
-        println!("send_keepalive");
+        log::debug!("send_keepalive");
         let message = WebSocketMessage {
             r#type: Some(Type::REQUEST as i32),
             response: None,
