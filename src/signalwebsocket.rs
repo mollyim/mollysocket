@@ -1,3 +1,4 @@
+use async_std::task;
 use async_trait::async_trait;
 use futures_channel::mpsc;
 use std::{
@@ -16,7 +17,7 @@ pub mod tls;
 pub mod websocket_connection;
 
 const SERVER_DELIVERED_TIMESTAMP_HEADER: &str = "X-Signal-Timestamp";
-const PUSH_TIMEOUT: Duration = Duration::from_secs(10);
+const PUSH_TIMEOUT: Duration = Duration::from_secs(5);
 
 pub struct SignalWebSocket {
     connect_addr: url::Url,
@@ -68,6 +69,25 @@ impl SignalWebSocket {
                 Instant::now().checked_sub(PUSH_TIMEOUT).unwrap(),
             )),
             last_keepalive: Arc::new(Mutex::new(Instant::now())),
+        }
+    }
+
+    pub async fn connection_loop(&mut self) {
+        let mut count = 0;
+        loop {
+            let instant = Instant::now();
+            let mut keepalive = self.last_keepalive.lock().unwrap();
+            *keepalive = Instant::now();
+            drop(keepalive);
+            self.connect(tls::build_tls_connector().unwrap()).await;
+            if let Some(duration) = Instant::now().checked_duration_since(instant) {
+                if duration > Duration::from_secs(60) {
+                    count = 0;
+                }
+            }
+            count += 1;
+            println!("> Retrying in {}0 secondes.", count);
+            task::sleep(Duration::from_secs(count * 10)).await;
         }
     }
 

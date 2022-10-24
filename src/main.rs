@@ -1,7 +1,6 @@
-use std::env;
-use std::process;
+use std::{env, process};
 
-use crate::signalwebsocket::{tls, websocket_connection::WebSocketConnection, SignalWebSocket};
+use crate::signalwebsocket::SignalWebSocket;
 
 pub mod signalwebsocket;
 
@@ -22,7 +21,7 @@ async fn main() {
         usage();
         process::exit(0)
     });
-    SignalWebSocket::new(connect_addr, push_endpoint)
-        .connect(tls::build_tls_connector().unwrap())
-        .await
+    SignalWebSocket::new(connect_addr.clone(), push_endpoint.clone())
+        .connection_loop()
+        .await;
 }
