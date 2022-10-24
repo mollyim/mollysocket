@@ -16,7 +16,6 @@ use websocket_connection::{
 pub mod tls;
 pub mod websocket_connection;
 
-const SERVER_DELIVERED_TIMESTAMP_HEADER: &str = "X-Signal-Timestamp";
 const PUSH_TIMEOUT: Duration = Duration::from_secs(5);
 
 pub struct SignalWebSocket {
@@ -76,9 +75,10 @@ impl SignalWebSocket {
         let mut count = 0;
         loop {
             let instant = Instant::now();
-            let mut keepalive = self.last_keepalive.lock().unwrap();
-            *keepalive = Instant::now();
-            drop(keepalive);
+            {
+                let mut keepalive = self.last_keepalive.lock().unwrap();
+                *keepalive = Instant::now();
+            }
             self.connect(tls::build_tls_connector().unwrap()).await;
             if let Some(duration) = Instant::now().checked_duration_since(instant) {
                 if duration > Duration::from_secs(60) {
@@ -94,8 +94,8 @@ impl SignalWebSocket {
     fn on_response(&self, response: Option<WebSocketResponseMessage>) {
         println!("  > New response");
         if let Some(_) = response {
-            let mut last_keepalive = self.last_keepalive.lock().unwrap();
-            *last_keepalive = Instant::now()
+            let mut keepalive = self.last_keepalive.lock().unwrap();
+            *keepalive = Instant::now()
         }
     }
 
@@ -120,10 +120,6 @@ impl SignalWebSocket {
         let response = self.create_websocket_response(&request);
         // dbg!(&response);
         if self.is_signal_service_envelope(&request) {
-            let timestamp: u64 = match self.find_header(&request) {
-                Some(timestamp) => timestamp.parse().unwrap(),
-                None => 0,
-            };
             self.send_response(response);
             return true;
         }
@@ -143,24 +139,6 @@ impl SignalWebSocket {
         if let Some(verb) = verb {
             if let Some(path) = path {
                 return verb.eq("PUT") && path.eq("/api/v1/message");
-            }
-        }
-        false
-    }
-
-    fn is_socket_empty_request(
-        &self,
-        WebSocketRequestMessage {
-            verb,
-            path,
-            body: _,
-            headers: _,
-            id: _,
-        }: &WebSocketRequestMessage,
-    ) -> bool {
-        if let Some(verb) = verb {
-            if let Some(path) = path {
-                return verb.eq("PUT") && path.eq("/api/v1/queue/empty");
             }
         }
         false
@@ -188,37 +166,12 @@ impl SignalWebSocket {
         }
     }
 
-    fn find_header(&self, message: &WebSocketRequestMessage) -> Option<String> {
-        if message.headers.len() == 0 {
-            return None;
-        }
-        let mut header_iter = message.headers.iter().filter_map(|header| {
-            if header
-                .to_lowercase()
-                .starts_with(SERVER_DELIVERED_TIMESTAMP_HEADER)
-            {
-                let mut split = header.split(":");
-                if let Some(header_name) = split.next() {
-                    if let Some(header_value) = split.next() {
-                        if header_name
-                            .trim()
-                            .eq_ignore_ascii_case(SERVER_DELIVERED_TIMESTAMP_HEADER)
-                        {
-                            return Some(String::from(header_value.to_lowercase().trim()));
-                        }
-                    }
-                }
-            }
-            None
-        });
-        header_iter.next()
-    }
-
     async fn notify(&self) {
         println!("  > Notifying");
-
-        let mut instant = self.push_instant.lock().unwrap();
-        *instant = Instant::now();
+        {
+            let mut instant = self.push_instant.lock().unwrap();
+            *instant = Instant::now();
+        }
 
         let url = self.push_endpoint.clone();
         let _ = reqwest::Client::new()
