@@ -1,9 +1,9 @@
 use lazy_static::lazy_static;
-use std::{env, process};
+use std::env;
 
 use config::Config;
-use signalwebsocket::SignalWebSocket;
 
+mod cli;
 mod config;
 mod signalwebsocket;
 
@@ -12,26 +12,32 @@ lazy_static! {
     static ref CONFIG: Config = Config::load();
 }
 
-fn usage() {
+fn usage() -> Result<(), ()> {
     println!(
-        "Usage: {} wss://signal.server.tld/path https://push.server.ltd/id",
+        "
+Usage: {0} [command] [args, ...]
+
+Commands:
+  oneshot      Connect to a websocket and push to the endpoint
+  server       Run webserver and websockets
+  endpoints    List, add and remove endpoints
+
+Run '{0} [command] --help' for more information on a command.
+",
         env::args().nth(0).unwrap()
     );
+
+    Ok(())
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), ()> {
     env_logger::init();
     // dbg!(&*CONFIG);
-    let connect_addr = env::args().nth(1).unwrap_or_else(|| {
-        usage();
-        process::exit(0)
-    });
-    let push_endpoint = env::args().nth(2).unwrap_or_else(|| {
-        usage();
-        process::exit(0)
-    });
-    SignalWebSocket::new(connect_addr.clone(), push_endpoint.clone())
-        .connection_loop()
-        .await;
+    let mut args = env::args();
+    args.next();
+    match args.next() {
+        Some(cmd) if cmd == "oneshot" || cmd == "o" => cli::oneshot::oneshot(args).await,
+        _ => usage(),
+    }
 }
