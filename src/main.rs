@@ -1,8 +1,16 @@
+use lazy_static::lazy_static;
 use std::{env, process};
 
-use crate::signalwebsocket::SignalWebSocket;
+use config::Config;
+use signalwebsocket::SignalWebSocket;
 
-pub mod signalwebsocket;
+mod config;
+mod signalwebsocket;
+
+lazy_static! {
+    #[derive(Debug)]
+    static ref CONFIG: Config = Config::load();
+}
 
 fn usage() {
     println!(
@@ -14,6 +22,7 @@ fn usage() {
 #[tokio::main]
 async fn main() {
     env_logger::init();
+    // dbg!(&*CONFIG);
     let connect_addr = env::args().nth(1).unwrap_or_else(|| {
         usage();
         process::exit(0)
