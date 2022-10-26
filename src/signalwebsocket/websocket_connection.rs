@@ -1,13 +1,13 @@
-use async_std::task;
 use async_trait::async_trait;
 use futures_channel::mpsc;
-use futures_util::{FutureExt, StreamExt};
+use futures_util::{pin_mut, select, FutureExt, StreamExt};
 use native_tls::TlsConnector;
 use prost::Message;
 use std::{
     sync::{Arc, Mutex},
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
+use tokio::time;
 use tokio_tungstenite::{
     tungstenite::{self, client::IntoClientRequest},
     Connector::NativeTls,
@@ -75,7 +75,7 @@ pub trait WebSocketConnection {
 
         let to_keepalive_handle = self.loop_keepalive(timer_tx).fuse();
 
-        futures::pin_mut!(
+        pin_mut!(
             to_ws_handle,
             from_ws_handle,
             from_keepalive_handle,
@@ -83,7 +83,7 @@ pub trait WebSocketConnection {
         );
 
         // handle websocket
-        futures::select!(
+        select!(
             _ = to_ws_handle => log::warn!("Messages finished"),
             _ = from_ws_handle => log::warn!("Websocket finished"),
             _ = from_keepalive_handle => log::warn!("Keepalive finished"),
@@ -110,7 +110,7 @@ pub trait WebSocketConnection {
                 log::warn!("Did not receive the last keepalive: aborting.");
                 break;
             }
-            task::sleep(KEEPALIVE).await;
+            time::sleep(KEEPALIVE).await;
             log::debug!("Sending Keepalive");
             timer_tx.unbounded_send(true).unwrap();
         }

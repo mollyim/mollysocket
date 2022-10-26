@@ -1,10 +1,10 @@
-use async_std::task;
 use async_trait::async_trait;
 use futures_channel::mpsc;
 use std::{
     sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
+use tokio::time;
 use tokio_tungstenite::tungstenite;
 use websocket_connection::{
     websocket_message::{
@@ -87,7 +87,7 @@ impl SignalWebSocket {
             }
             count += 1;
             log::info!("Retrying to connect in {}0 secondes.", count);
-            task::sleep(Duration::from_secs(count * 10)).await;
+            time::sleep(Duration::from_secs(count * 10)).await;
         }
     }
 

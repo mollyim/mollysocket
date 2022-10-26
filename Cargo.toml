@@ -1,25 +1,23 @@
 [package]
-name = "signal-ws4unifiedpush"
+name = "mollysocket"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = { version = "1.0.0", features = ["full"] }
-tokio-tungstenite = { version = "0.17.2", features = ["native-tls"] }
-url = "2.0.0"
+async-trait = "0.1.58"
+confy = "0.5.0"
+env_logger = "0.9.1"
+futures-channel = "0.3"
+futures-util = "0.3"
 http = "0.2.4"
-futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
+lazy_static = "1.4.0"
+log = "0.4.17"
 native-tls = "0.2.10"
 prost = "0.11"
-futures-channel = "0.3"
-futures = "0.3"
 reqwest = "0.11.12"
-async-trait = "0.1.58"
-async-std = "1.12.0"
-log = "0.4.17"
-env_logger = "0.9.1"
-confy = "0.5.0"
 serde = { version = "1.0.147", features = ["derive"]}
-lazy_static = "1.4.0"
+tokio-tungstenite = { version = "0.17.2", features = ["native-tls"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+url = "2.0.0"
