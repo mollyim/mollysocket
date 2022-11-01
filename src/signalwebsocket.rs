@@ -109,7 +109,7 @@ impl SignalWebSocket {
                 if self.waiting_timeout_reached() {
                     self.notify().await;
                 } else {
-                    log::debug!("The waiting timeout is not reached: the request is ignored.");
+                    log::info!("The waiting timeout is not reached: the request is ignored.");
                 }
             }
         }
@@ -167,7 +167,7 @@ impl SignalWebSocket {
     }
 
     async fn notify(&self) {
-        log::debug!("  > Notifying");
+        log::debug!("Sending the notification.");
         {
             let mut instant = self.push_instant.lock().unwrap();
             *instant = Instant::now();
