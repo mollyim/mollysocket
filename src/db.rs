@@ -84,3 +84,30 @@ fn int_to_instant(instant_as_int: u64) -> Option<SystemTime> {
     let duration = Duration::from_secs(instant_as_int);
     UNIX_EPOCH.checked_add(duration)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_db() {
+        let db = MollySocketDb::new().unwrap();
+        let uuid = "0d2ff653-3d88-43de-bcdb-f6657d3484e4";
+        db.add(Connection {
+            uuid: String::from(uuid),
+            device_id: 1,
+            password: String::from("pass"),
+            endpoint: String::from("http://0.0.0.0/"),
+            forbidden: false,
+            last_registration: None,
+        })
+        .unwrap();
+        assert!(db
+            .list()
+            .unwrap()
+            .iter()
+            .map(|co| &co.uuid)
+            .any(|raw_uuid| raw_uuid == uuid));
+        db.rm(&uuid).unwrap();
+    }
+}
