@@ -21,3 +21,4 @@ serde = { version = "1.0.147", features = ["derive"]}
 tokio-tungstenite = { version = "0.17.2", features = ["native-tls"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 url = "2.0.0"
+rusqlite = "0.28.0"

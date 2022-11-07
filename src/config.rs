@@ -9,6 +9,13 @@ pub struct Config {
     pub ws_endpoint: String,
     pub allowed_endpoints: Vec<url::Url>,
     pub allowed_uuids: Vec<String>,
+    pub db: String,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Config::load()
+    }
 }
 
 impl Config {
@@ -28,6 +35,7 @@ impl Config {
                 .map(|endpoint| url::Url::parse(&endpoint).unwrap())
                 .collect(),
             allowed_uuids: user_cfg.allowed_uuids,
+            db: user_cfg.db,
         }
     }
 
@@ -37,7 +45,14 @@ impl Config {
             .any(|allowed| allowed == "*" || allowed == uuid)
     }
 
-    pub fn is_endpoint_valid(&self, url: &url::Url) -> bool {
+    pub fn is_endpoint_valid(&self, url: &str) -> bool {
+        if let Ok(url) = url::Url::parse(url) {
+            return self.is_url_endpoint_valid(&url);
+        }
+        false
+    }
+
+    pub fn is_url_endpoint_valid(&self, url: &url::Url) -> bool {
         self.allowed_endpoints.iter().any(|allowed| {
             url.host() == allowed.host()
                 && url.port() == allowed.port()
@@ -54,10 +69,8 @@ mod tests {
 
     fn test_config(uuid: &str) -> Config {
         Config {
-            version: String::from("tests"),
-            ws_endpoint: String::from("tests"),
-            allowed_endpoints: vec![url::Url::parse("http://0.0.0.0/").unwrap()],
             allowed_uuids: vec![String::from(uuid)],
+            ..Default::default()
         }
     }
 
@@ -77,11 +90,12 @@ mod tests {
     #[test]
     fn check_endpoint() {
         let cfg = test_config("*");
-        assert!(cfg.is_endpoint_valid(&url::Url::parse("http://0.0.0.0/foo?blah").unwrap()));
-        assert!(!cfg.is_endpoint_valid(&url::Url::parse("http://0.0.0.0:8080/foo?blah").unwrap()));
+        assert!(cfg.is_url_endpoint_valid(&url::Url::parse("http://0.0.0.0/foo?blah").unwrap()));
         assert!(
-            !cfg.is_endpoint_valid(&url::Url::parse("http://user:pass@0.0.0.0/foo?blah").unwrap())
+            !cfg.is_url_endpoint_valid(&url::Url::parse("http://0.0.0.0:8080/foo?blah").unwrap())
         );
-        assert!(!cfg.is_endpoint_valid(&url::Url::parse("https://0.0.0.0/foo?blah").unwrap()));
+        assert!(!cfg
+            .is_url_endpoint_valid(&url::Url::parse("http://user:pass@0.0.0.0/foo?blah").unwrap()));
+        assert!(!cfg.is_url_endpoint_valid(&url::Url::parse("https://0.0.0.0/foo?blah").unwrap()));
     }
 }

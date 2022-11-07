@@ -12,6 +12,7 @@ pub struct UserConfig {
     pub environment: Environment,
     pub allowed_endpoints: Vec<String>,
     pub allowed_uuids: Vec<String>,
+    pub db: String,
 }
 
 /// `MyConfig` implements `Default`
@@ -21,6 +22,7 @@ impl Default for UserConfig {
             environment: Environment::PROD,
             allowed_endpoints: vec![String::from("http://0.0.0.0/")],
             allowed_uuids: vec![String::from("*")],
+            db: String::from("./mollysocket.db"),
         }
     }
 }
