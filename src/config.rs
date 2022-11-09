@@ -6,10 +6,7 @@ mod user_config;
 #[derive(Debug)]
 pub struct Config {
     pub version: String,
-    pub ws_endpoint: String,
-    pub allowed_endpoints: Vec<url::Url>,
-    pub allowed_uuids: Vec<String>,
-    pub db: String,
+    pub user_cfg: UserConfig,
 }
 
 impl Default for Config {
@@ -23,24 +20,13 @@ impl Config {
         let user_cfg = UserConfig::load().unwrap_or_else(|_| UserConfig::default());
         Config {
             version: String::from(option_env!("CARGO_PKG_VERSION").unwrap_or_else(|| "Unknown")),
-            ws_endpoint: String::from(match user_cfg.environment {
-                Environment::PROD => "wss://chat.signal.org/v1/websocket/?login=%s.%s&password=%s",
-                Environment::STAGING => {
-                    "wss://chat.staging.signal.org/v1/websocket/?login=%s.%s&password=%s"
-                }
-            }),
-            allowed_endpoints: user_cfg
-                .allowed_endpoints
-                .into_iter()
-                .map(|endpoint| url::Url::parse(&endpoint).unwrap())
-                .collect(),
-            allowed_uuids: user_cfg.allowed_uuids,
-            db: user_cfg.db,
+            user_cfg,
         }
     }
 
     pub fn is_uuid_valid(&self, uuid: &str) -> bool {
-        self.allowed_uuids
+        self.user_cfg
+            .allowed_uuids
             .iter()
             .any(|allowed| allowed == "*" || allowed == uuid)
     }
@@ -53,13 +39,29 @@ impl Config {
     }
 
     pub fn is_url_endpoint_valid(&self, url: &url::Url) -> bool {
-        self.allowed_endpoints.iter().any(|allowed| {
-            url.host() == allowed.host()
-                && url.port() == allowed.port()
-                && url.scheme() == allowed.scheme()
-                && url.username() == allowed.username()
-                && url.password() == allowed.password()
+        self.user_cfg.allowed_endpoints.iter().any(|allowed| {
+            let allowed_url = url::Url::parse(allowed).unwrap();
+            url.host() == allowed_url.host()
+                && url.port() == allowed_url.port()
+                && url.scheme() == allowed_url.scheme()
+                && url.username() == allowed_url.username()
+                && url.password() == allowed_url.password()
         })
+    }
+
+    pub fn get_ws_endpoint(&self, uuid: &str, devide_id: u32, password: &str) -> String {
+        match self.user_cfg.environment {
+            Environment::PROD => format!(
+                "wss://chat.signal.org/v1/websocket/?login={}.{}&password={}",
+                uuid, devide_id, password
+            ),
+            Environment::STAGING => {
+                format!(
+                    "wss://chat.staging.signal.org/v1/websocket/?login={}.{}&password={}",
+                    uuid, devide_id, password
+                )
+            }
+        }
     }
 }
 
@@ -69,7 +71,10 @@ mod tests {
 
     fn test_config(uuid: &str) -> Config {
         Config {
-            allowed_uuids: vec![String::from(uuid)],
+            user_cfg: UserConfig {
+                allowed_uuids: vec![String::from(uuid)],
+                ..Default::default()
+            },
             ..Default::default()
         }
     }

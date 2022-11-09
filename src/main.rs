@@ -38,6 +38,7 @@ async fn main() {
     match args.next() {
         Some(cmd) if cmd == "oneshot" || cmd == "o" => cli::oneshot::oneshot(args).await,
         Some(cmd) if cmd == "connection" || cmd == "c" => cli::connection::connection(args),
+        Some(cmd) if cmd == "server" || cmd == "s" => cli::server::server(args).await,
         _ => usage(),
     }
 }

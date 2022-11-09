@@ -19,7 +19,7 @@ pub struct Connection {
 
 impl MollySocketDb {
     pub fn new() -> Result<MollySocketDb, rusqlite::Error> {
-        let db = rusqlite::Connection::open(CONFIG.db.clone())?;
+        let db = rusqlite::Connection::open(CONFIG.user_cfg.db.clone())?;
         db.execute_batch(
             "
 CREATE TABLE IF NOT EXISTS connections(
