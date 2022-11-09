@@ -1,7 +1,9 @@
 use crate::db::{Connection, MollySocketDb};
 use crate::signalwebsocket::SignalWebSocket;
+use crate::web;
 use crate::CONFIG;
 use futures_channel::mpsc;
+use futures_util::join;
 use futures_util::{future::join_all, select, FutureExt, StreamExt};
 use lazy_static::lazy_static;
 use std::{
@@ -36,11 +38,13 @@ pub async fn server(mut args: Args) {
         .iter()
         .map(|co| connection_loop(co).fuse())
         .collect();
-    join_all(loops).await;
+
+    let web = web::launch().fuse();
+
+    join!(join_all(loops), web);
 }
 
 async fn connection_loop(co: &Connection) {
-    dbg!(&co);
     let (tx, mut rx) = mpsc::unbounded();
     {
         REFS.lock().unwrap().push(LoopRef {
