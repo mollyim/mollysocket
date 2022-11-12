@@ -5,6 +5,7 @@ use config::Config;
 mod cli;
 mod config;
 mod db;
+mod error;
 mod signalwebsocket;
 mod web;
 

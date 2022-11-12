@@ -4,7 +4,6 @@ use futures_util::{pin_mut, select, FutureExt, StreamExt};
 use native_tls::TlsConnector;
 use prost::Message;
 use std::{
-    error::Error,
     sync::{Arc, Mutex},
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
@@ -17,6 +16,8 @@ use tokio_tungstenite::{
 use websocket_message::{
     webSocketMessage::Type, WebSocketMessage, WebSocketRequestMessage, WebSocketResponseMessage,
 };
+
+use crate::error::Error;
 
 pub mod websocket_message;
 
@@ -31,7 +32,7 @@ pub trait WebSocketConnection {
     fn get_last_keepalive(&self) -> Arc<Mutex<Instant>>;
     async fn on_message(&self, message: WebSocketMessage);
 
-    async fn connect(&mut self, tls_connector: TlsConnector) -> Result<(), Box<dyn Error>> {
+    async fn connect(&mut self, tls_connector: TlsConnector) -> Result<(), Error> {
         let mut request = self.get_url().into_client_request()?;
 
         request

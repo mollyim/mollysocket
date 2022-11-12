@@ -1,7 +1,6 @@
 use async_trait::async_trait;
 use futures_channel::mpsc;
 use std::{
-    error::Error,
     sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
@@ -13,6 +12,8 @@ use websocket_connection::{
     },
     WebSocketConnection,
 };
+
+use crate::error::Error;
 
 pub mod tls;
 pub mod websocket_connection;
@@ -72,7 +73,7 @@ impl SignalWebSocket {
         }
     }
 
-    pub async fn connection_loop(&mut self) -> Result<(), Box<dyn Error>> {
+    pub async fn connection_loop(&mut self) -> Result<(), Error> {
         let mut count = 0;
         loop {
             let instant = Instant::now();

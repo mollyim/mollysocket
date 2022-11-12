@@ -1,5 +1,7 @@
-use crate::db;
-use crate::CONFIG;
+use crate::{
+    db::{self, OptTime},
+    CONFIG,
+};
 use std::env::{self, Args};
 
 fn usage() {
@@ -80,13 +82,13 @@ fn add(mut argv: Vec<String>) {
         }
     }
     .clone();
-    let _ = db::MollySocketDb::new().unwrap().add(db::Connection {
+    let _ = db::MollySocketDb::new().unwrap().add(&db::Connection {
         uuid: uuid.clone(),
         device_id,
         password,
         endpoint,
         forbidden: false,
-        last_registration: None,
+        last_registration: OptTime(None),
     });
     println!("Connection for {} added.", uuid);
 }
