@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use futures_channel::mpsc;
 use std::{
+    error::Error,
     sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
@@ -71,7 +72,7 @@ impl SignalWebSocket {
         }
     }
 
-    pub async fn connection_loop(&mut self) {
+    pub async fn connection_loop(&mut self) -> Result<(), Box<dyn Error>> {
         let mut count = 0;
         loop {
             let instant = Instant::now();
@@ -79,7 +80,7 @@ impl SignalWebSocket {
                 let mut keepalive = self.last_keepalive.lock().unwrap();
                 *keepalive = Instant::now();
             }
-            self.connect(tls::build_tls_connector().unwrap()).await;
+            self.connect(tls::build_tls_connector()?).await?;
             if let Some(duration) = Instant::now().checked_duration_since(instant) {
                 if duration > Duration::from_secs(60) {
                     count = 0;

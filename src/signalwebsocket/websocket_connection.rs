@@ -4,6 +4,7 @@ use futures_util::{pin_mut, select, FutureExt, StreamExt};
 use native_tls::TlsConnector;
 use prost::Message;
 use std::{
+    error::Error,
     sync::{Arc, Mutex},
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
@@ -30,8 +31,8 @@ pub trait WebSocketConnection {
     fn get_last_keepalive(&self) -> Arc<Mutex<Instant>>;
     async fn on_message(&self, message: WebSocketMessage);
 
-    async fn connect(&mut self, tls_connector: TlsConnector) {
-        let mut request = self.get_url().into_client_request().unwrap();
+    async fn connect(&mut self, tls_connector: TlsConnector) -> Result<(), Box<dyn Error>> {
+        let mut request = self.get_url().into_client_request()?;
 
         request
             .headers_mut()
@@ -42,8 +43,7 @@ pub trait WebSocketConnection {
             None,
             Some(NativeTls(tls_connector)),
         )
-        .await
-        .expect("Failed to connect");
+        .await?;
 
         log::info!("WebSocket handshake has been successfully completed");
 
@@ -89,6 +89,7 @@ pub trait WebSocketConnection {
             _ = from_keepalive_handle => log::warn!("Keepalive finished"),
             _ = to_keepalive_handle => log::warn!("Keepalive finished"),
         );
+        Ok(())
     }
 
     async fn handle_message(&self, message: tungstenite::Message) {

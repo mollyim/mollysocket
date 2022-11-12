@@ -1,10 +1,14 @@
-use rusqlite;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use rusqlite::{self, Row};
+use std::{
+    error::Error,
+    sync::{Arc, Mutex},
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
 
 use crate::CONFIG;
 
 pub struct MollySocketDb {
-    db: rusqlite::Connection,
+    db: Arc<Mutex<rusqlite::Connection>>,
 }
 
 #[derive(Debug)]
@@ -17,8 +21,21 @@ pub struct Connection {
     pub last_registration: Option<SystemTime>,
 }
 
+impl Connection {
+    fn map(row: &Row) -> Result<Connection, rusqlite::Error> {
+        Ok(Connection {
+            uuid: row.get(0)?,
+            device_id: row.get(1)?,
+            password: row.get(2)?,
+            endpoint: row.get(3)?,
+            forbidden: row.get(4)?,
+            last_registration: int_to_instant(row.get(5)?),
+        })
+    }
+}
+
 impl MollySocketDb {
-    pub fn new() -> Result<MollySocketDb, rusqlite::Error> {
+    pub fn new() -> Result<MollySocketDb, Box<dyn Error>> {
         let db = rusqlite::Connection::open(CONFIG.user_cfg.db.clone())?;
         db.execute_batch(
             "
@@ -32,11 +49,13 @@ CREATE TABLE IF NOT EXISTS connections(
 )
             ",
         )?;
-        Ok(MollySocketDb { db })
+        Ok(MollySocketDb {
+            db: Arc::new(Mutex::new(db)),
+        })
     }
 
-    pub fn add(&self, co: Connection) -> Result<(), rusqlite::Error> {
-        self.db.execute(
+    pub fn add(&self, co: Connection) -> Result<(), Box<dyn Error>> {
+        self.db.lock().unwrap().execute(
             "INSERT INTO connections(uuid, device_id, password, endpoint, forbidden, last_registration)
             VALUES (?, ?, ?, ?, ?, ?);",
             [co.uuid, co.device_id.to_string(), co.password, co.endpoint, String::from(if co.forbidden { "1" } else { "0" }), instant_to_int(co.last_registration).to_string()]
@@ -44,24 +63,20 @@ CREATE TABLE IF NOT EXISTS connections(
         Ok(())
     }
 
-    pub fn list(&self) -> Result<Vec<Connection>, rusqlite::Error> {
-        self.db
+    pub fn list(&self) -> Result<Vec<Connection>, Box<dyn Error>> {
+        Ok(self
+            .db
+            .lock()
+            .unwrap()
             .prepare("SELECT * FROM connections;")?
-            .query_map([], |raw| {
-                Ok(Connection {
-                    uuid: raw.get(0)?,
-                    device_id: raw.get(1)?,
-                    password: raw.get(2)?,
-                    endpoint: raw.get(3)?,
-                    forbidden: raw.get(4)?,
-                    last_registration: int_to_instant(raw.get(5)?),
-                })
-            })?
-            .collect()
+            .query_map([], Connection::map)?
+            .collect::<Result<Vec<Connection>, rusqlite::Error>>()?)
     }
 
-    pub fn rm(&self, uuid: &str) -> Result<(), rusqlite::Error> {
+    pub fn rm(&self, uuid: &str) -> Result<(), Box<dyn Error>> {
         self.db
+            .lock()
+            .unwrap()
             .execute("DELETE FROM connections WHERE uuid=?1;", [&uuid])?;
         Ok(())
     }
@@ -107,7 +122,7 @@ mod tests {
             .unwrap()
             .iter()
             .map(|co| &co.uuid)
-            .any(|raw_uuid| raw_uuid == uuid));
+            .any(|row_uuid| row_uuid == uuid));
         db.rm(&uuid).unwrap();
     }
 }

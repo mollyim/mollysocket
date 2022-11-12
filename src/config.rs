@@ -40,12 +40,14 @@ impl Config {
 
     pub fn is_url_endpoint_valid(&self, url: &url::Url) -> bool {
         self.user_cfg.allowed_endpoints.iter().any(|allowed| {
-            let allowed_url = url::Url::parse(allowed).unwrap();
-            url.host() == allowed_url.host()
-                && url.port() == allowed_url.port()
-                && url.scheme() == allowed_url.scheme()
-                && url.username() == allowed_url.username()
-                && url.password() == allowed_url.password()
+            if let Ok(allowed_url) = url::Url::parse(allowed) {
+                return url.host() == allowed_url.host()
+                    && url.port() == allowed_url.port()
+                    && url.scheme() == allowed_url.scheme()
+                    && url.username() == allowed_url.username()
+                    && url.password() == allowed_url.password();
+            }
+            false
         })
     }
 
