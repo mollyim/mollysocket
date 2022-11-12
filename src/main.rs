@@ -6,8 +6,8 @@ mod cli;
 mod config;
 mod db;
 mod error;
+mod server;
 mod signalwebsocket;
-mod web;
 
 lazy_static! {
     #[derive(Debug)]
