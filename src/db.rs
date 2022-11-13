@@ -46,6 +46,12 @@ impl From<u64> for OptTime {
     }
 }
 
+impl From<SystemTime> for OptTime {
+    fn from(t: SystemTime) -> Self {
+        OptTime(Some(t))
+    }
+}
+
 impl Connection {
     fn map(row: &Row) -> Result<Connection, rusqlite::Error> {
         Ok(Connection {

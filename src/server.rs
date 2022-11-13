@@ -4,7 +4,7 @@ use crate::{
     signalwebsocket::SignalWebSocket,
     CONFIG,
 };
-use futures_channel::mpsc;
+use futures_channel::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use futures_util::join;
 use futures_util::{future::join_all, select, FutureExt, StreamExt};
 use lazy_static::lazy_static;
@@ -18,9 +18,12 @@ struct LoopRef {
     tx: mpsc::UnboundedSender<bool>,
 }
 
+type OptSender = Option<UnboundedSender<Connection>>;
+
 lazy_static! {
     static ref REFS: Arc<Mutex<Vec<LoopRef>>> = Arc::new(Mutex::new(vec![]));
     static ref DB: MollySocketDb = MollySocketDb::new().unwrap();
+    static ref TX: Arc<Mutex<OptSender>> = Arc::new(Mutex::new(None));
 }
 
 pub async fn run() {
@@ -30,9 +33,25 @@ pub async fn run() {
         .map(|co| connection_loop(co).fuse())
         .collect();
 
+    let (tx, rx) = mpsc::unbounded();
+    {
+        let mut s_tx = TX.lock().unwrap();
+        *s_tx = Some(tx);
+    }
+
+    let new_loops = gen_new_loops(rx).fuse();
+
     let web = web::launch().fuse();
 
-    join!(join_all(loops), web);
+    join!(join_all(loops), new_loops, web);
+}
+
+pub async fn gen_new_loops(rx: UnboundedReceiver<Connection>) {
+    rx.for_each_concurrent(None, |mut co| async move {
+        kill(&co.uuid).await;
+        connection_loop(&mut co).await;
+    })
+    .await;
 }
 
 async fn connection_loop(co: &mut Connection) {

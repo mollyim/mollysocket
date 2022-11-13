@@ -20,6 +20,7 @@ pub mod websocket_connection;
 
 const PUSH_TIMEOUT: Duration = Duration::from_secs(5);
 
+#[derive(Debug)]
 pub struct SignalWebSocket {
     connect_addr: url::Url,
     push_endpoint: url::Url,
