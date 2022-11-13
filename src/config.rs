@@ -11,13 +11,17 @@ pub struct Config {
 
 impl Default for Config {
     fn default() -> Self {
-        Config::load()
+        Config::load(Some(UserConfig::default()))
     }
 }
 
 impl Config {
-    pub fn load() -> Config {
-        let user_cfg = UserConfig::load().unwrap_or_else(|_| UserConfig::default());
+    pub fn load(opt_user_cfg: Option<UserConfig>) -> Config {
+        let user_cfg = if let Some(cfg) = opt_user_cfg {
+            cfg
+        } else {
+            UserConfig::load().unwrap()
+        };
         Config {
             version: String::from(option_env!("CARGO_PKG_VERSION").unwrap_or_else(|| "Unknown")),
             user_cfg,

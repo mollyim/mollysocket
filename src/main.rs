@@ -11,7 +11,7 @@ mod signalwebsocket;
 
 lazy_static! {
     #[derive(Debug)]
-    static ref CONFIG: Config = Config::load();
+    static ref CONFIG: Config = Config::load(None);
 }
 
 #[tokio::main]
