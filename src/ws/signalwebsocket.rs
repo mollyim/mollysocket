@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use futures_channel::mpsc;
+use reqwest::redirect::Policy;
 use std::{
     sync::{Arc, Mutex},
     time::{Duration, Instant},
@@ -173,7 +174,10 @@ impl SignalWebSocket {
         }
 
         let url = self.push_endpoint.clone();
-        let _ = reqwest::Client::new()
+        let _ = reqwest::ClientBuilder::new()
+            .redirect(Policy::none())
+            .build()
+            .unwrap()
             .post(url)
             .header("Content-Type", "application/json")
             .body("{\"type\":\"request\"}")
