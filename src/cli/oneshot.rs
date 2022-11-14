@@ -1,4 +1,4 @@
-use crate::signalwebsocket::SignalWebSocket;
+use crate::ws::SignalWebSocket;
 use std::env::{self, Args};
 
 fn usage() {

@@ -1,5 +1,5 @@
 use crate::server::{REFS, TX};
-use crate::{db::Connection, error::Error, server::DB, signalwebsocket::SignalWebSocket, CONFIG};
+use crate::{db::Connection, error::Error, server::DB, ws::SignalWebSocket, CONFIG};
 use futures_channel::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use futures_util::join;
 use futures_util::{future::join_all, select, FutureExt, StreamExt};

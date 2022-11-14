@@ -6,17 +6,13 @@ use std::{
 };
 use tokio::time;
 use tokio_tungstenite::tungstenite;
-use websocket_connection::{
-    websocket_message::{
-        webSocketMessage::Type, WebSocketMessage, WebSocketRequestMessage, WebSocketResponseMessage,
-    },
-    WebSocketConnection,
+
+use super::tls;
+use super::websocket_connection::WebSocketConnection;
+use super::websocket_message::{
+    webSocketMessage::Type, WebSocketMessage, WebSocketRequestMessage, WebSocketResponseMessage,
 };
-
 use crate::error::Error;
-
-pub mod tls;
-pub mod websocket_connection;
 
 const PUSH_TIMEOUT: Duration = Duration::from_secs(5);
 

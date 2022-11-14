@@ -13,13 +13,10 @@ use tokio_tungstenite::{
     Connector::NativeTls,
 };
 
-use websocket_message::{
+use super::websocket_message::{
     webSocketMessage::Type, WebSocketMessage, WebSocketRequestMessage, WebSocketResponseMessage,
 };
-
 use crate::error::Error;
-
-pub mod websocket_message;
 
 const KEEPALIVE: Duration = Duration::from_secs(30);
 const KEEPALIVE_TIMEOUT: Duration = Duration::from_secs(40);
