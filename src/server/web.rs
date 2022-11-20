@@ -1,20 +1,15 @@
 use crate::{
-    db::{Connection, MollySocketDb, OptTime},
+    db::{Connection, OptTime},
     error::Error,
     CONFIG,
 };
-use lazy_static::lazy_static;
 use rocket::{
     get, post, routes,
     serde::{json::Json, Deserialize, Serialize},
 };
 use std::{collections::HashMap, time::SystemTime};
 
-use super::TX;
-
-lazy_static! {
-    static ref DB: MollySocketDb = MollySocketDb::new().unwrap();
-}
+use super::{DB, TX};
 
 #[derive(Serialize)]
 struct Response {
