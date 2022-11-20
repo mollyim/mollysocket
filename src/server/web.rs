@@ -83,7 +83,7 @@ fn register(co_data: Json<ConnectionData>) -> Json<Response> {
         _ => {}
     }
     gen_rep(HashMap::from([(
-        "status".to_string(),
+        String::from("status"),
         String::from(status),
     )]))
 }
@@ -120,7 +120,7 @@ fn registration_status(uuid: &str) -> RegistrationStatus {
 }
 
 fn gen_rep(mut map: HashMap<String, String>) -> Json<Response> {
-    map.insert("version".to_string(), CONFIG.version.clone());
+    map.insert(String::from("version"), CONFIG.version.clone());
     Json(Response { mollysocket: map })
 }
 

@@ -25,7 +25,7 @@ pub async fn cli() {
     args.next();
     match args.next() {
         Some(cmd) if cmd == "oneshot" || cmd == "o" => oneshot::oneshot(args).await,
-        Some(cmd) if cmd == "connection" || cmd == "c" => connection::connection(args),
+        Some(cmd) if cmd == "connection" || cmd == "c" => connection::connection(args).await,
         Some(cmd) if cmd == "server" || cmd == "s" => server::server(args).await,
         _ => usage(),
     }

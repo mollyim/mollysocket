@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use futures_channel::mpsc;
-use reqwest::redirect::Policy;
 use std::{
+    collections::HashMap,
     sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
@@ -13,7 +13,7 @@ use super::websocket_connection::WebSocketConnection;
 use super::websocket_message::{
     webSocketMessage::Type, WebSocketMessage, WebSocketRequestMessage, WebSocketResponseMessage,
 };
-use crate::error::Error;
+use crate::{error::Error, utils::post_allowed::post_allowed};
 
 const PUSH_TIMEOUT: Duration = Duration::from_secs(5);
 
@@ -174,15 +174,7 @@ impl SignalWebSocket {
         }
 
         let url = self.push_endpoint.clone();
-        let _ = reqwest::ClientBuilder::new()
-            .redirect(Policy::none())
-            .build()
-            .unwrap()
-            .post(url)
-            .header("Content-Type", "application/json")
-            .body("{\"type\":\"request\"}")
-            .send()
-            .await;
+        let _ = post_allowed(url, HashMap::from([("type", "request")])).await;
     }
 
     fn waiting_timeout_reached(&self) -> bool {

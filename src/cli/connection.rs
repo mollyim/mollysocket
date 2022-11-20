@@ -18,20 +18,20 @@ Commands:
     );
 }
 
-pub fn connection(args: Args) {
+pub async fn connection(args: Args) {
     let argv: Vec<String> = args.collect();
     if argv.iter().any(|arg| arg == "--help" || arg == "-h") {
         return usage();
     };
     match argv.get(0) {
-        Some(cmd) if cmd == "add" || cmd == "a" => add(argv),
+        Some(cmd) if cmd == "add" || cmd == "a" => add(argv).await,
         Some(cmd) if cmd == "rm" || cmd == "r" => rm(argv),
         Some(cmd) if cmd == "list" || cmd == "l" => list(),
         _ => return usage(),
     };
 }
 
-fn add(mut argv: Vec<String>) {
+async fn add(mut argv: Vec<String>) {
     argv.remove(0);
     let uuid = match argv.get(0) {
         Some(argv1) => {
@@ -70,7 +70,7 @@ fn add(mut argv: Vec<String>) {
     .clone();
     let endpoint = match argv.get(3) {
         Some(argv4) => {
-            if CONFIG.is_endpoint_valid(argv4) {
+            if CONFIG.is_endpoint_valid(argv4).await {
                 argv4
             } else {
                 println!("Endpoint invalid or forbidden: {}", argv4);

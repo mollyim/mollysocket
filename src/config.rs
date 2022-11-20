@@ -1,6 +1,8 @@
 use std::{default::Default, fmt::Debug};
 use user_config::{Environment, UserConfig};
 
+use crate::utils::post_allowed::ResolveAllowed;
+
 mod user_config;
 
 #[derive(Debug)]
@@ -35,14 +37,20 @@ impl Config {
             .any(|allowed| allowed == "*" || allowed == uuid)
     }
 
-    pub fn is_endpoint_valid(&self, url: &str) -> bool {
+    pub async fn is_endpoint_valid(&self, url: &str) -> bool {
         if let Ok(url) = url::Url::parse(url) {
-            return self.is_url_endpoint_valid(&url);
+            return self.is_url_endpoint_valid(&url).await;
         }
         false
     }
 
-    pub fn is_url_endpoint_valid(&self, url: &url::Url) -> bool {
+    pub async fn is_url_endpoint_valid(&self, url: &url::Url) -> bool {
+        self.is_endpoint_allowed_by_user(url)
+            || (self.user_cfg.allowed_endpoints.contains(&String::from("*"))
+                && url.resolve_allowed().await.unwrap_or(vec![]).len().gt(&0))
+    }
+
+    pub fn is_endpoint_allowed_by_user(&self, url: &url::Url) -> bool {
         self.user_cfg.allowed_endpoints.iter().any(|allowed| {
             if let Ok(allowed_url) = url::Url::parse(allowed) {
                 return url.host() == allowed_url.host()
@@ -98,15 +106,26 @@ mod tests {
         assert!(!cfg.is_uuid_valid("11111111-3d88-43de-bcdb-f6657d3484e4"));
     }
 
-    #[test]
-    fn check_endpoint() {
+    #[tokio::test]
+    async fn check_endpoint() {
         let cfg = test_config("*");
-        assert!(cfg.is_url_endpoint_valid(&url::Url::parse("http://0.0.0.0/foo?blah").unwrap()));
+        assert!(
+            cfg.is_url_endpoint_valid(&url::Url::parse("http://0.0.0.0/foo?blah").unwrap())
+                .await
+        );
         assert!(
             !cfg.is_url_endpoint_valid(&url::Url::parse("http://0.0.0.0:8080/foo?blah").unwrap())
+                .await
         );
-        assert!(!cfg
-            .is_url_endpoint_valid(&url::Url::parse("http://user:pass@0.0.0.0/foo?blah").unwrap()));
-        assert!(!cfg.is_url_endpoint_valid(&url::Url::parse("https://0.0.0.0/foo?blah").unwrap()));
+        assert!(
+            !cfg.is_url_endpoint_valid(
+                &url::Url::parse("http://user:pass@0.0.0.0/foo?blah").unwrap()
+            )
+            .await
+        );
+        assert!(
+            !cfg.is_url_endpoint_valid(&url::Url::parse("https://0.0.0.0/foo?blah").unwrap())
+                .await
+        );
     }
 }

@@ -1,3 +1,4 @@
+#![feature(ip)]
 use lazy_static::lazy_static;
 
 use config::Config;
@@ -5,9 +6,11 @@ use config::Config;
 mod cli;
 mod config;
 mod db;
-mod error;
 mod server;
+mod utils;
 mod ws;
+
+pub use utils::error;
 
 lazy_static! {
     #[derive(Debug)]
