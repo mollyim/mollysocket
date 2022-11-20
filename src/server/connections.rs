@@ -51,10 +51,16 @@ async fn connection_loop(co: &mut Connection) {
             tx,
         });
     }
-    let mut socket = SignalWebSocket::new(
+    let mut socket = match SignalWebSocket::new(
         CONFIG.get_ws_endpoint(&co.uuid, co.device_id, &co.password),
         co.endpoint.clone(),
-    );
+    ) {
+        Ok(s) => s,
+        Err(e) => {
+            log::info!("An error occured for {}: {}", co.uuid, e);
+            return;
+        }
+    };
     select!(
         res = socket.connection_loop().fuse() => handle_connection_closed(res, co),
         _ = rx.next().fuse() => log::info!("Connection killed"),

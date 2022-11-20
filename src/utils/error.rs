@@ -6,9 +6,11 @@ pub enum Error {
     Db(rusqlite::Error),
     Ws(tungstenite::Error),
     Tls(native_tls::Error),
+    Url(url::ParseError),
     Reqwest(reqwest::Error),
     HostNotAllowed,
     SchemeNotAllowed,
+    EndpointForbidden,
 }
 
 impl error::Error for Error {}
@@ -19,9 +21,11 @@ impl Display for Error {
             Error::Db(e) => e.fmt(f),
             Error::Ws(e) => e.fmt(f),
             Error::Tls(e) => e.fmt(f),
+            Error::Url(e) => e.fmt(f),
             Error::Reqwest(e) => e.fmt(f),
             Error::HostNotAllowed => f.write_str("The host is not allowed"),
             Error::SchemeNotAllowed => f.write_str("The scheme is not allowed"),
+            Error::EndpointForbidden => f.write_str("The endpoint is forbidden"),
         }
     }
 }
@@ -41,6 +45,12 @@ impl From<tungstenite::Error> for Error {
 impl From<native_tls::Error> for Error {
     fn from(e: native_tls::Error) -> Self {
         Error::Tls(e)
+    }
+}
+
+impl From<url::ParseError> for Error {
+    fn from(e: url::ParseError) -> Self {
+        Error::Url(e)
     }
 }
 

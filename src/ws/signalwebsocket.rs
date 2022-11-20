@@ -57,10 +57,10 @@ impl WebSocketConnection for SignalWebSocket {
 }
 
 impl SignalWebSocket {
-    pub fn new(connect_addr: String, push_endpoint: String) -> Self {
-        let connect_addr = url::Url::parse(&connect_addr).expect("Cannot parse websocket url");
-        let push_endpoint = url::Url::parse(&push_endpoint).expect("Cannot parse endpoint url");
-        Self {
+    pub fn new(connect_addr: String, push_endpoint: String) -> Result<Self, Error> {
+        let connect_addr = url::Url::parse(&connect_addr)?;
+        let push_endpoint = url::Url::parse(&push_endpoint)?;
+        Ok(Self {
             connect_addr,
             push_endpoint,
             tx: None,
@@ -68,7 +68,7 @@ impl SignalWebSocket {
                 Instant::now().checked_sub(PUSH_TIMEOUT).unwrap(),
             )),
             last_keepalive: Arc::new(Mutex::new(Instant::now())),
-        }
+        })
     }
 
     pub async fn connection_loop(&mut self) -> Result<(), Error> {

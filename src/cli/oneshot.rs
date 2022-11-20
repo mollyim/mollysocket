@@ -29,6 +29,7 @@ pub async fn oneshot(args: Args) {
         }
     };
     let _ = SignalWebSocket::new(connect_addr.clone(), push_endpoint.clone())
+        .unwrap()
         .connection_loop()
         .await;
 }
