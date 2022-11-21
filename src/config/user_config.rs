@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::{default::Default, fmt::Debug};
+use std::{default::Default, env, fmt::Debug};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Environment {
@@ -28,7 +28,11 @@ impl Default for UserConfig {
 }
 impl UserConfig {
     pub fn load() -> Result<UserConfig, confy::ConfyError> {
-        let cfg: UserConfig = confy::load("mollysocket", None)?;
+        let cfg: UserConfig = if let Some(path) = env::var_os("MOLLY_CONF") {
+            confy::load_path(path)?
+        } else {
+            confy::load("mollysocket", None)?
+        };
         Ok(cfg)
     }
 }
