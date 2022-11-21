@@ -2,7 +2,6 @@ use async_trait::async_trait;
 use lazy_static::lazy_static;
 use reqwest::redirect::Policy;
 use std::{
-    collections::HashMap,
     net::{IpAddr, SocketAddr},
     str::FromStr,
 };
@@ -17,7 +16,7 @@ lazy_static! {
 
 pub async fn post_allowed<'a>(
     url: Url,
-    body: HashMap<&'a str, &'a str>,
+    body: &[(&'a str, &'a str)],
 ) -> Result<reqwest::Response, Error> {
     let client = if CONFIG.is_endpoint_allowed_by_user(&url) {
         reqwest::ClientBuilder::new().redirect(Policy::none())
@@ -114,7 +113,7 @@ mod tests {
     async fn test_post() {
         post_allowed(
             Url::from_str("https://httpbin.org/post").unwrap(),
-            HashMap::from([("foo", "blah")]),
+            &[("foo", "blah")],
         )
         .await
         .unwrap();

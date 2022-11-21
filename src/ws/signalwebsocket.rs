@@ -1,7 +1,6 @@
 use async_trait::async_trait;
 use futures_channel::mpsc;
 use std::{
-    collections::HashMap,
     sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
@@ -13,7 +12,7 @@ use super::websocket_connection::WebSocketConnection;
 use super::websocket_message::{
     webSocketMessage::Type, WebSocketMessage, WebSocketRequestMessage, WebSocketResponseMessage,
 };
-use crate::{error::Error, utils::post_allowed::post_allowed};
+use crate::{config::Strategy, error::Error, utils::post_allowed::post_allowed, CONFIG};
 
 const PUSH_TIMEOUT: Duration = Duration::from_secs(5);
 
@@ -174,10 +173,23 @@ impl SignalWebSocket {
         }
 
         let url = self.push_endpoint.clone();
-        let _ = post_allowed(url, HashMap::from([("type", "request")])).await;
+        let _ = post_allowed(
+            url,
+            &[(
+                "type",
+                match CONFIG.user_cfg.strategy {
+                    Strategy::Websocket => "websocket",
+                    Strategy::Rest => "rest",
+                },
+            )],
+        )
+        .await;
     }
 
     fn waiting_timeout_reached(&self) -> bool {
+        if let Strategy::Rest = CONFIG.user_cfg.strategy {
+            return true;
+        }
         let instant = self.push_instant.lock().unwrap();
         instant.elapsed() > PUSH_TIMEOUT
     }

@@ -3,6 +3,8 @@ use user_config::{Environment, UserConfig};
 
 use crate::utils::post_allowed::ResolveAllowed;
 
+pub use self::user_config::Strategy;
+
 mod user_config;
 
 #[derive(Debug)]
@@ -65,11 +67,11 @@ impl Config {
 
     pub fn get_ws_endpoint(&self, uuid: &str, devide_id: u32, password: &str) -> String {
         match self.user_cfg.environment {
-            Environment::PROD => format!(
+            Environment::Prod => format!(
                 "wss://chat.signal.org/v1/websocket/?login={}.{}&password={}",
                 uuid, devide_id, password
             ),
-            Environment::STAGING => {
+            Environment::Staging => {
                 format!(
                     "wss://chat.staging.signal.org/v1/websocket/?login={}.{}&password={}",
                     uuid, devide_id, password
