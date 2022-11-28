@@ -29,6 +29,7 @@ enum RegistrationStatus {
     Running,
     Forbidden,
     InvalidUuid,
+    InvalidEndpoint,
     InternalError,
 }
 
@@ -39,6 +40,7 @@ impl From<RegistrationStatus> for String {
             RegistrationStatus::Running => "ok",
             RegistrationStatus::Forbidden => "forbidden",
             RegistrationStatus::InvalidUuid => "invalid_uuid",
+            RegistrationStatus::InvalidEndpoint => "invalid_endpoint",
             RegistrationStatus::InternalError => "internal_error",
         })
     }
@@ -50,8 +52,8 @@ fn discover() -> Json<Response> {
 }
 
 #[post("/signal", format = "application/json", data = "<co_data>")]
-fn register(co_data: Json<ConnectionData>) -> Json<Response> {
-    let mut status = registration_status(&co_data.uuid);
+async fn register(co_data: Json<ConnectionData>) -> Json<Response> {
+    let mut status = registration_status(&co_data.uuid, &co_data.endpoint).await;
     match status {
         RegistrationStatus::New => {
             if let Err(_) = new_connection(co_data) {
@@ -99,19 +101,28 @@ fn new_connection(co_data: Json<ConnectionData>) -> Result<(), Error> {
     Ok(())
 }
 
-fn registration_status(uuid: &str) -> RegistrationStatus {
+async fn registration_status(uuid: &str, endpoint: &str) -> RegistrationStatus {
+    let endpoint_valid = CONFIG.is_endpoint_valid(endpoint).await;
     if CONFIG.is_uuid_valid(uuid) {
         if let Ok(co) = DB.get(uuid) {
             if co.forbidden {
                 return RegistrationStatus::Forbidden;
             } else {
-                return RegistrationStatus::Running;
+                return if endpoint_valid {
+                    RegistrationStatus::Running
+                } else {
+                    RegistrationStatus::InvalidEndpoint
+                };
             }
         }
     } else {
         return RegistrationStatus::InvalidUuid;
     }
-    RegistrationStatus::New
+    if endpoint_valid {
+        RegistrationStatus::New
+    } else {
+        RegistrationStatus::InvalidEndpoint
+    }
 }
 
 fn gen_rep(mut map: HashMap<String, String>) -> Json<Response> {

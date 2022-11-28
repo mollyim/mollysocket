@@ -53,12 +53,12 @@ pub async fn post_allowed<'a>(
     Ok(client.post(url).json(&body).send().await?)
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 pub trait ResolveAllowed {
     async fn resolve_allowed(&self) -> Result<Vec<IpAddr>, Error>;
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl ResolveAllowed for Url {
     async fn resolve_allowed(&self) -> Result<Vec<IpAddr>, Error> {
         dbg!(&self);
@@ -70,7 +70,7 @@ impl ResolveAllowed for Url {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl ResolveAllowed for Host<&str> {
     async fn resolve_allowed(&self) -> Result<Vec<IpAddr>, Error> {
         match self {
@@ -89,7 +89,7 @@ impl ResolveAllowed for Host<&str> {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl ResolveAllowed for LookupIp {
     async fn resolve_allowed(&self) -> Result<Vec<IpAddr>, Error> {
         Ok(self.iter().filter(|ip| ip.is_global()).collect())
