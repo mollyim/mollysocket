@@ -52,7 +52,7 @@ fn discover() -> Json<Response> {
     gen_rep(HashMap::new())
 }
 
-#[post("/signal", format = "application/json", data = "<co_data>")]
+#[post("/", format = "application/json", data = "<co_data>")]
 async fn register(co_data: Json<ConnectionData>) -> Json<Response> {
     let mut status = registration_status(&co_data.uuid, &co_data.endpoint).await;
     match status {
