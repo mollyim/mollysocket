@@ -1,5 +1,7 @@
 use rusqlite::{self, Row};
 use std::{
+    fmt::Display,
+    str::FromStr,
     sync::{Arc, Mutex},
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
@@ -10,14 +12,39 @@ pub struct MollySocketDb {
     db: Arc<Mutex<rusqlite::Connection>>,
 }
 
+#[derive(Debug, Clone)]
+pub enum Strategy {
+    Websocket,
+    Rest,
+}
+
 #[derive(Debug)]
 pub struct Connection {
     pub uuid: String,
     pub device_id: u32,
     pub password: String,
     pub endpoint: String,
+    pub strategy: Strategy,
     pub forbidden: bool,
     pub last_registration: OptTime,
+}
+
+impl FromStr for Strategy {
+    type Err = Error;
+
+    fn from_str(input: &str) -> Result<Strategy, Error> {
+        match input.to_lowercase().as_str() {
+            "websocket" => Ok(Strategy::Websocket),
+            "rest" => Ok(Strategy::Rest),
+            _ => Err(Error::ParseError),
+        }
+    }
+}
+
+impl Display for Strategy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 #[derive(Debug)]
@@ -53,14 +80,15 @@ impl From<SystemTime> for OptTime {
 }
 
 impl Connection {
-    fn map(row: &Row) -> Result<Connection, rusqlite::Error> {
+    fn map(row: &Row) -> Result<Connection, Error> {
         Ok(Connection {
             uuid: row.get(0)?,
             device_id: row.get(1)?,
             password: row.get(2)?,
             endpoint: row.get(3)?,
-            forbidden: row.get(4)?,
-            last_registration: OptTime::from(row.get::<usize, u64>(5)?),
+            strategy: Strategy::from_str(&row.get::<usize, String>(4)?)?,
+            forbidden: row.get(5)?,
+            last_registration: OptTime::from(row.get::<usize, u64>(6)?),
         })
     }
 }
@@ -75,6 +103,7 @@ CREATE TABLE IF NOT EXISTS connections(
     device_id INTEGER,
     password TEXT,
     endpoint TEXT,
+    strategy TEXT,
     forbidden BOOLEAN NOT NULL CHECK (forbidden IN (0, 1)),
     last_registration INTEGER
 )
@@ -87,9 +116,9 @@ CREATE TABLE IF NOT EXISTS connections(
 
     pub fn add(&self, co: &Connection) -> Result<(), Error> {
         self.db.lock().unwrap().execute(
-            "INSERT INTO connections(uuid, device_id, password, endpoint, forbidden, last_registration)
-            VALUES (?, ?, ?, ?, ?, ?);",
-            [&co.uuid, &co.device_id.to_string(), &co.password, &co.endpoint, &String::from(if co.forbidden { "1" } else { "0" }), &u64::from(&co.last_registration).to_string()]
+            "INSERT INTO connections(uuid, device_id, password, endpoint, strategy, forbidden, last_registration)
+            VALUES (?, ?, ?, ?, ?, ?, ?);",
+            [&co.uuid, &co.device_id.to_string(), &co.password, &co.endpoint, &co.strategy.to_string(), &String::from(if co.forbidden { "1" } else { "0" }), &u64::from(&co.last_registration).to_string()]
         )?;
         Ok(())
     }
@@ -100,17 +129,18 @@ CREATE TABLE IF NOT EXISTS connections(
             .lock()
             .unwrap()
             .prepare("SELECT * FROM connections;")?
-            .query_map([], Connection::map)?
-            .collect::<Result<Vec<Connection>, rusqlite::Error>>()?)
+            .query_and_then([], Connection::map)?
+            .collect::<Result<Vec<Connection>, Error>>()?)
     }
 
     pub fn get(&self, uuid: &str) -> Result<Connection, Error> {
-        Ok(self
-            .db
+        self.db
             .lock()
             .unwrap()
             .prepare("SELECT * FROM connections WHERE uuid=?1 LIMIT 1")?
-            .query_row([uuid], Connection::map)?)
+            .query_and_then([uuid], Connection::map)?
+            .next()
+            .ok_or(rusqlite::Error::QueryReturnedNoRows)?
     }
 
     pub fn rm(&self, uuid: &str) -> Result<(), Error> {
@@ -135,6 +165,7 @@ mod tests {
             device_id: 1,
             password: String::from("pass"),
             endpoint: String::from("http://0.0.0.0/"),
+            strategy: Strategy::Websocket,
             forbidden: false,
             last_registration: OptTime(None),
         })

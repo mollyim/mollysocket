@@ -3,8 +3,6 @@ use user_config::{Environment, UserConfig};
 
 use crate::utils::post_allowed::ResolveAllowed;
 
-pub use self::user_config::Strategy;
-
 mod user_config;
 
 #[derive(Debug)]

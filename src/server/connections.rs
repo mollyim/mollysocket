@@ -54,6 +54,7 @@ async fn connection_loop(co: &mut Connection) {
     let mut socket = match SignalWebSocket::new(
         CONFIG.get_ws_endpoint(&co.uuid, co.device_id, &co.password),
         co.endpoint.clone(),
+        co.strategy.clone(),
     ) {
         Ok(s) => s,
         Err(e) => {

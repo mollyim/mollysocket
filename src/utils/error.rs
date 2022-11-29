@@ -11,6 +11,7 @@ pub enum Error {
     HostNotAllowed,
     SchemeNotAllowed,
     EndpointForbidden,
+    ParseError,
 }
 
 impl error::Error for Error {}
@@ -26,6 +27,7 @@ impl Display for Error {
             Error::HostNotAllowed => f.write_str("The host is not allowed"),
             Error::SchemeNotAllowed => f.write_str("The scheme is not allowed"),
             Error::EndpointForbidden => f.write_str("The endpoint is forbidden"),
+            Error::ParseError => f.write_str("An error occured"),
         }
     }
 }

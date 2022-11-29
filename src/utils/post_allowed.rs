@@ -105,7 +105,7 @@ mod tests {
             .unwrap()
             .resolve_allowed()
             .await
-            .unwrap()
+            .unwrap_or(vec![])
             .len()
     }
 

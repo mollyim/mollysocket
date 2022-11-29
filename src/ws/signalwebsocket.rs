@@ -12,7 +12,7 @@ use super::websocket_connection::WebSocketConnection;
 use super::websocket_message::{
     webSocketMessage::Type, WebSocketMessage, WebSocketRequestMessage, WebSocketResponseMessage,
 };
-use crate::{config::Strategy, error::Error, utils::post_allowed::post_allowed, CONFIG};
+use crate::{db::Strategy, error::Error, utils::post_allowed::post_allowed};
 
 const PUSH_TIMEOUT: Duration = Duration::from_secs(5);
 
@@ -20,6 +20,7 @@ const PUSH_TIMEOUT: Duration = Duration::from_secs(5);
 pub struct SignalWebSocket {
     connect_addr: url::Url,
     push_endpoint: url::Url,
+    strategy: Strategy,
     tx: Option<mpsc::UnboundedSender<tungstenite::Message>>,
     push_instant: Arc<Mutex<Instant>>,
     last_keepalive: Arc<Mutex<Instant>>,
@@ -56,12 +57,17 @@ impl WebSocketConnection for SignalWebSocket {
 }
 
 impl SignalWebSocket {
-    pub fn new(connect_addr: String, push_endpoint: String) -> Result<Self, Error> {
+    pub fn new(
+        connect_addr: String,
+        push_endpoint: String,
+        strategy: Strategy,
+    ) -> Result<Self, Error> {
         let connect_addr = url::Url::parse(&connect_addr)?;
         let push_endpoint = url::Url::parse(&push_endpoint)?;
         Ok(Self {
             connect_addr,
             push_endpoint,
+            strategy,
             tx: None,
             push_instant: Arc::new(Mutex::new(
                 Instant::now().checked_sub(PUSH_TIMEOUT).unwrap(),
@@ -173,21 +179,11 @@ impl SignalWebSocket {
         }
 
         let url = self.push_endpoint.clone();
-        let _ = post_allowed(
-            url,
-            &[(
-                "type",
-                match CONFIG.user_cfg.strategy {
-                    Strategy::Websocket => "websocket",
-                    Strategy::Rest => "rest",
-                },
-            )],
-        )
-        .await;
+        let _ = post_allowed(url, &[("type", "message")]).await;
     }
 
     fn waiting_timeout_reached(&self) -> bool {
-        if let Strategy::Rest = CONFIG.user_cfg.strategy {
+        if let Strategy::Rest = self.strategy {
             return true;
         }
         let instant = self.push_instant.lock().unwrap();

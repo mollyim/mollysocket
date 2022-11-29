@@ -1,5 +1,5 @@
 use crate::{
-    db::{Connection, OptTime},
+    db::{Connection, OptTime, Strategy},
     error::Error,
     CONFIG,
 };
@@ -7,7 +7,7 @@ use rocket::{
     get, post, routes,
     serde::{json::Json, Deserialize, Serialize},
 };
-use std::{collections::HashMap, time::SystemTime};
+use std::{collections::HashMap, str::FromStr, time::SystemTime};
 
 use super::{DB, TX};
 
@@ -22,6 +22,7 @@ struct ConnectionData {
     pub device_id: u32,
     pub password: String,
     pub endpoint: String,
+    pub strategy: String,
 }
 
 enum RegistrationStatus {
@@ -91,6 +92,7 @@ fn new_connection(co_data: Json<ConnectionData>) -> Result<(), Error> {
         device_id: co_data.device_id,
         password: co_data.password.clone(),
         endpoint: co_data.endpoint.clone(),
+        strategy: Strategy::from_str(co_data.strategy.as_str())?,
         forbidden: false,
         last_registration: OptTime::from(SystemTime::now()),
     };

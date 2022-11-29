@@ -8,16 +8,8 @@ pub enum Environment {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub enum Strategy {
-    Websocket,
-    Rest,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct UserConfig {
     pub environment: Environment,
-    // Strategy will probably be removed after the testing phase
-    pub strategy: Strategy,
     pub allowed_endpoints: Vec<String>,
     pub allowed_uuids: Vec<String>,
     pub db: String,
@@ -27,7 +19,6 @@ impl Default for UserConfig {
     fn default() -> Self {
         Self {
             environment: Environment::Prod,
-            strategy: Strategy::Websocket,
             allowed_endpoints: vec![String::from("http://0.0.0.0/")],
             allowed_uuids: vec![String::from("*")],
             db: String::from("./mollysocket.db"),
