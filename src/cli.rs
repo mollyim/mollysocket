@@ -10,7 +10,6 @@ fn usage() {
 Usage: {0} [command] [args, ...]
 
 Commands:
-  oneshot      Connect to a websocket and push to the endpoint
   server       Run webserver and websockets
   connection    List, add and remove connections
 
