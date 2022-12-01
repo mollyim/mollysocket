@@ -108,13 +108,13 @@ impl SignalWebSocket {
      * That's when we must send a notification
      */
     async fn on_request(&self, request: Option<WebSocketRequestMessage>) {
-        log::info!("New request");
+        log::debug!("New request");
         if let Some(request) = request {
             if self.read_or_empty(request) {
                 if self.waiting_timeout_reached() {
                     self.notify().await;
                 } else {
-                    log::info!("The waiting timeout is not reached: the request is ignored.");
+                    log::debug!("The waiting timeout is not reached: the request is ignored.");
                 }
             }
         }
