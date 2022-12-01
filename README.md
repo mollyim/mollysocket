@@ -33,7 +33,7 @@ We are currently testing it and the efficiency of the different strategy. Your f
   * Websocket: Every time MollySocket receives a(n encrypted) data : it notifies Molly via UnifiedPush if it hasn't notified the last 5 seconds. Then Molly open the websocket for 20secs. This strategy avoid to reach some rate limit for some public provider such as https://ntfy.sh but may increase a little bit the battery drain.
 
 ## License
-License file coming. AGPLv3.
+AGPLv3: see [LICENSE.txt](./LICENSE.txt).
 
 ## Disclaimer
 This project is NOT sponsored by or affiliated to Signal Messenger, Signal Foundation or the Molly project (*).
