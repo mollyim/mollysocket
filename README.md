@@ -11,7 +11,7 @@ Review of the server code is welcomed.
 
 The associated pull request for Molly (android) can be found here: <https://github.com/mollyim/mollyim-android/pull/152>.
 
-We are currently testing it and the efficiency of the different strategy. Your feedback is welcome here: *Coming*.
+We are currently testing it and the efficiency of the different strategy. Your feedback is welcome here: <https://github.com/MollySocket/mollysocket/issues/1>.
 
 ## Configuration
 * MollySocket web server does not provide TLS. It should be accessible behind a reverse proxy. It is possible to use MollySocket without the web server: see the Air Gaped mode on Android settings.
