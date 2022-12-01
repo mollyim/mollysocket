@@ -9,7 +9,7 @@ This is still in alpha.
 
 Review of the server code is welcomed.
 
-The associated pull request for Molly (android) can be found here: *Coming*.
+The associated pull request for Molly (android) can be found here: <https://github.com/mollyim/mollyim-android/pull/152>.
 
 We are currently testing it and the efficiency of the different strategy. Your feedback is welcome here: *Coming*.
 
