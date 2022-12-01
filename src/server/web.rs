@@ -27,6 +27,7 @@ struct ConnectionData {
 
 enum RegistrationStatus {
     New,
+    Updated,
     Running,
     Forbidden,
     InvalidUuid,
@@ -37,8 +38,9 @@ enum RegistrationStatus {
 impl From<RegistrationStatus> for String {
     fn from(r: RegistrationStatus) -> Self {
         String::from(match r {
-            RegistrationStatus::New => "ok",
-            RegistrationStatus::Running => "ok",
+            RegistrationStatus::New | RegistrationStatus::Updated | RegistrationStatus::Running => {
+                "ok"
+            }
             RegistrationStatus::Forbidden => "forbidden",
             RegistrationStatus::InvalidUuid => "invalid_uuid",
             RegistrationStatus::InvalidEndpoint => "invalid_endpoint",
@@ -54,9 +56,9 @@ fn discover() -> Json<Response> {
 
 #[post("/", format = "application/json", data = "<co_data>")]
 async fn register(co_data: Json<ConnectionData>) -> Json<Response> {
-    let mut status = registration_status(&co_data.uuid, &co_data.endpoint).await;
+    let mut status = registration_status(&co_data).await;
     match status {
-        RegistrationStatus::Running | RegistrationStatus::New => {
+        RegistrationStatus::Updated | RegistrationStatus::New => {
             if let Err(_) = new_connection(co_data) {
                 status = RegistrationStatus::InternalError;
             }
@@ -65,7 +67,7 @@ async fn register(co_data: Json<ConnectionData>) -> Json<Response> {
             if let Ok(co) = DB.get(&co_data.uuid) {
                 if co.device_id != co_data.device_id || co.password != co_data.password {
                     if let Ok(_) = new_connection(co_data) {
-                        status = RegistrationStatus::Running;
+                        status = RegistrationStatus::Updated;
                     } else {
                         status = RegistrationStatus::InternalError;
                     }
@@ -74,6 +76,8 @@ async fn register(co_data: Json<ConnectionData>) -> Json<Response> {
                 status = RegistrationStatus::InternalError;
             }
         }
+        //TODO: Update last registration for ::Running
+
         // If the connection is "Running" then the device creds still exists,
         // if the user register on another server or delete the linked device,
         // then the connection ends with a 403 Forbidden
@@ -103,15 +107,23 @@ fn new_connection(co_data: Json<ConnectionData>) -> Result<(), Error> {
     Ok(())
 }
 
-async fn registration_status(uuid: &str, endpoint: &str) -> RegistrationStatus {
-    let endpoint_valid = CONFIG.is_endpoint_valid(endpoint).await;
-    if CONFIG.is_uuid_valid(uuid) {
-        if let Ok(co) = DB.get(uuid) {
+async fn registration_status(co_data: &ConnectionData) -> RegistrationStatus {
+    let endpoint_valid = CONFIG.is_endpoint_valid(&co_data.endpoint).await;
+    if CONFIG.is_uuid_valid(&co_data.uuid) {
+        if let Ok(co) = DB.get(&co_data.uuid) {
             if co.forbidden {
                 return RegistrationStatus::Forbidden;
             } else {
                 return if endpoint_valid {
-                    RegistrationStatus::Running
+                    if &co.strategy.to_string().to_lowercase() == &co_data.strategy.to_lowercase()
+                        && &co.device_id == &co_data.device_id
+                        && &co.password == &co_data.password
+                        && &co.endpoint == &co_data.endpoint
+                    {
+                        RegistrationStatus::Running
+                    } else {
+                        RegistrationStatus::Updated
+                    }
                 } else {
                     RegistrationStatus::InvalidEndpoint
                 };
