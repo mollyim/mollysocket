@@ -56,7 +56,7 @@ fn discover() -> Json<Response> {
 async fn register(co_data: Json<ConnectionData>) -> Json<Response> {
     let mut status = registration_status(&co_data.uuid, &co_data.endpoint).await;
     match status {
-        RegistrationStatus::New => {
+        RegistrationStatus::Running | RegistrationStatus::New => {
             if let Err(_) = new_connection(co_data) {
                 status = RegistrationStatus::InternalError;
             }
