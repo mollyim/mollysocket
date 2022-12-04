@@ -1,3 +1,4 @@
+use eyre::{eyre, Error, Result};
 use rusqlite::{self, Row};
 use std::{
     fmt::Display,
@@ -6,7 +7,7 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use crate::{error::Error, CONFIG};
+use crate::CONFIG;
 
 pub struct MollySocketDb {
     db: Arc<Mutex<rusqlite::Connection>>,
@@ -32,11 +33,11 @@ pub struct Connection {
 impl FromStr for Strategy {
     type Err = Error;
 
-    fn from_str(input: &str) -> Result<Strategy, Error> {
+    fn from_str(input: &str) -> Result<Strategy> {
         match input.to_lowercase().as_str() {
             "websocket" => Ok(Strategy::Websocket),
             "rest" => Ok(Strategy::Rest),
-            _ => Err(Error::ParseError),
+            _ => Err(eyre!("Could not parse the input")),
         }
     }
 }
@@ -80,7 +81,7 @@ impl From<SystemTime> for OptTime {
 }
 
 impl Connection {
-    fn map(row: &Row) -> Result<Connection, Error> {
+    fn map(row: &Row) -> Result<Connection> {
         Ok(Connection {
             uuid: row.get(0)?,
             device_id: row.get(1)?,
@@ -94,7 +95,7 @@ impl Connection {
 }
 
 impl MollySocketDb {
-    pub fn new() -> Result<MollySocketDb, Error> {
+    pub fn new() -> Result<MollySocketDb> {
         let db = rusqlite::Connection::open(CONFIG.user_cfg.db.clone())?;
         db.execute_batch(
             "
@@ -114,7 +115,7 @@ CREATE TABLE IF NOT EXISTS connections(
         })
     }
 
-    pub fn add(&self, co: &Connection) -> Result<(), Error> {
+    pub fn add(&self, co: &Connection) -> Result<()> {
         self.db.lock().unwrap().execute(
             "INSERT INTO connections(uuid, device_id, password, endpoint, strategy, forbidden, last_registration)
             VALUES (?, ?, ?, ?, ?, ?, ?);",
@@ -123,17 +124,17 @@ CREATE TABLE IF NOT EXISTS connections(
         Ok(())
     }
 
-    pub fn list(&self) -> Result<Vec<Connection>, Error> {
+    pub fn list(&self) -> Result<Vec<Connection>> {
         Ok(self
             .db
             .lock()
             .unwrap()
             .prepare("SELECT * FROM connections;")?
             .query_and_then([], Connection::map)?
-            .collect::<Result<Vec<Connection>, Error>>()?)
+            .collect::<Result<Vec<Connection>>>()?)
     }
 
-    pub fn get(&self, uuid: &str) -> Result<Connection, Error> {
+    pub fn get(&self, uuid: &str) -> Result<Connection> {
         self.db
             .lock()
             .unwrap()
@@ -143,7 +144,7 @@ CREATE TABLE IF NOT EXISTS connections(
             .ok_or(rusqlite::Error::QueryReturnedNoRows)?
     }
 
-    pub fn rm(&self, uuid: &str) -> Result<(), Error> {
+    pub fn rm(&self, uuid: &str) -> Result<()> {
         self.db
             .lock()
             .unwrap()

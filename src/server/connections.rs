@@ -1,5 +1,10 @@
-use crate::server::{REFS, TX};
-use crate::{db::Connection, error::Error, server::DB, ws::SignalWebSocket, CONFIG};
+use crate::{
+    db::Connection,
+    server::{DB, REFS, TX},
+    ws::SignalWebSocket,
+    CONFIG,
+};
+use eyre::Result;
 use futures_channel::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use futures_util::{future::join_all, join, select, FutureExt, StreamExt};
 use tokio_tungstenite::tungstenite;
@@ -71,15 +76,21 @@ async fn connection_loop(co: &mut Connection) {
     }
 }
 
-fn handle_connection_closed(res: Result<(), Error>, co: &mut Connection) {
+fn handle_connection_closed(res: Result<()>, co: &mut Connection) {
     log::debug!("Connection closed.");
-    if let Err(Error::Ws(e)) = res {
-        if let tungstenite::Error::Http(resp) = e {
-            let status = resp.status();
-            log::info!("Connection for {} closed with status: {}", &co.uuid, status);
-            if status == 403 {
-                co.forbidden = true;
-                let _ = DB.add(co);
+
+    match res {
+        Ok(()) => (),
+        Err(error) => {
+            if let Some(http_error) = error.downcast_ref::<tungstenite::Error>() {
+                if let tungstenite::Error::Http(resp) = http_error {
+                    let status = resp.status();
+                    log::info!("Connection for {} closed with status: {}", &co.uuid, status);
+                    if status == 403 {
+                        co.forbidden = true;
+                        let _ = DB.add(co);
+                    }
+                }
             }
         }
     }

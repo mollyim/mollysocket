@@ -24,3 +24,4 @@ url = "2.0.0"
 rusqlite = "0.28.0"
 rocket = { version = "0.5.0-rc.2", features = ["json"]}
 trust-dns-resolver = { version = "0.22.0", features = ["tokio-runtime"]}
+eyre = "0.6.8"

@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use eyre::Result;
 use futures_channel::mpsc;
 use futures_util::{pin_mut, select, FutureExt, SinkExt, StreamExt};
 use native_tls::TlsConnector;
@@ -16,7 +17,6 @@ use tokio_tungstenite::{
 use super::websocket_message::{
     webSocketMessage::Type, WebSocketMessage, WebSocketRequestMessage, WebSocketResponseMessage,
 };
-use crate::error::Error;
 
 const KEEPALIVE: Duration = Duration::from_secs(30);
 const KEEPALIVE_TIMEOUT: Duration = Duration::from_secs(40);
@@ -29,7 +29,7 @@ pub trait WebSocketConnection {
     fn get_last_keepalive(&self) -> Arc<Mutex<Instant>>;
     async fn on_message(&self, message: WebSocketMessage);
 
-    async fn connect(&mut self, tls_connector: TlsConnector) -> Result<(), Error> {
+    async fn connect(&mut self, tls_connector: TlsConnector) -> Result<()> {
         let mut request = self.get_url().into_client_request()?;
 
         request

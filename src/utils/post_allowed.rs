@@ -1,25 +1,42 @@
 use async_trait::async_trait;
+use eyre::{eyre, Result};
 use lazy_static::lazy_static;
 use reqwest::redirect::Policy;
 use std::{
+    error::Error as StdError,
+    fmt::{Display, Formatter},
     net::{IpAddr, SocketAddr},
     str::FromStr,
 };
 use trust_dns_resolver::{lookup_ip::LookupIp, TokioAsyncResolver};
 use url::{Host, Url};
 
-use crate::{error::Error, CONFIG};
+use crate::CONFIG;
 
 lazy_static! {
     static ref RESOLVER: TokioAsyncResolver = TokioAsyncResolver::tokio_from_system_conf().unwrap();
 }
 
-pub async fn post_allowed(url: Url, body: &[(&str, &str)]) -> Result<reqwest::Response, Error> {
+#[derive(Debug)]
+enum Error {
+    SchemeNotAllowed,
+    HostNotAllowed,
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl StdError for Error {}
+
+pub async fn post_allowed(url: Url, body: &[(&str, &str)]) -> Result<reqwest::Response> {
     let port = match url.port() {
         Some(p) => p,
         None if url.scheme() == "http" => 80,
         None if url.scheme() == "https" => 443,
-        _ => return Err(Error::SchemeNotAllowed),
+        _ => return Err(eyre!(Error::SchemeNotAllowed)),
     };
 
     let client = if CONFIG.is_endpoint_allowed_by_user(&url) {
@@ -37,7 +54,7 @@ pub async fn post_allowed(url: Url, body: &[(&str, &str)]) -> Result<reqwest::Re
                 "Ignoring request to {}: no allowed ip",
                 url.host_str().unwrap_or(&"No host")
             );
-            return Err(Error::HostNotAllowed);
+            return Err(eyre!(Error::HostNotAllowed));
         }
 
         reqwest::ClientBuilder::new()
@@ -53,26 +70,26 @@ pub async fn post_allowed(url: Url, body: &[(&str, &str)]) -> Result<reqwest::Re
 
 #[async_trait]
 pub trait ResolveAllowed {
-    async fn resolve_allowed(&self) -> Result<Vec<IpAddr>, Error>;
+    async fn resolve_allowed(&self) -> Result<Vec<IpAddr>>;
 }
 
 #[async_trait]
 impl ResolveAllowed for Url {
-    async fn resolve_allowed(&self) -> Result<Vec<IpAddr>, Error> {
+    async fn resolve_allowed(&self) -> Result<Vec<IpAddr>> {
         if ["http", "https"].contains(&self.scheme()) {
             self.host()
                 .ok_or(Error::HostNotAllowed)?
                 .resolve_allowed()
                 .await
         } else {
-            Err(Error::SchemeNotAllowed)
+            Err(eyre!(Error::SchemeNotAllowed))
         }
     }
 }
 
 #[async_trait]
 impl ResolveAllowed for Host<&str> {
-    async fn resolve_allowed(&self) -> Result<Vec<IpAddr>, Error> {
+    async fn resolve_allowed(&self) -> Result<Vec<IpAddr>> {
         match self {
             Host::Domain(d) => {
                 RESOLVER
@@ -84,14 +101,14 @@ impl ResolveAllowed for Host<&str> {
             }
             Host::Ipv4(ip) if ip.is_global() => Ok(vec![IpAddr::V4(ip.clone())]),
             Host::Ipv6(ip) if ip.is_global() => Ok(vec![IpAddr::V6(ip.clone())]),
-            _ => Err(Error::HostNotAllowed),
+            _ => Err(eyre!(Error::HostNotAllowed)),
         }
     }
 }
 
 #[async_trait]
 impl ResolveAllowed for LookupIp {
-    async fn resolve_allowed(&self) -> Result<Vec<IpAddr>, Error> {
+    async fn resolve_allowed(&self) -> Result<Vec<IpAddr>> {
         Ok(self.iter().filter(|ip| ip.is_global()).collect())
     }
 }

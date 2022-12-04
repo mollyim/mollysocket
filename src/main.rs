@@ -10,8 +10,6 @@ mod server;
 mod utils;
 mod ws;
 
-pub use utils::error;
-
 lazy_static! {
     #[derive(Debug)]
     static ref CONFIG: Config = Config::load(None);

@@ -1,8 +1,8 @@
 use crate::{
     db::{Connection, OptTime, Strategy},
-    error::Error,
     CONFIG,
 };
+use eyre::Result;
 use rocket::{
     get, post, routes,
     serde::{json::Json, Deserialize, Serialize},
@@ -91,7 +91,7 @@ async fn register(co_data: Json<ConnectionData>) -> Json<Response> {
     )]))
 }
 
-fn new_connection(co_data: Json<ConnectionData>) -> Result<(), Error> {
+fn new_connection(co_data: Json<ConnectionData>) -> Result<()> {
     let co = Connection {
         uuid: co_data.uuid.clone(),
         device_id: co_data.device_id,

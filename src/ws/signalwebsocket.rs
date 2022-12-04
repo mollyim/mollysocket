@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use eyre::Result;
 use futures_channel::mpsc;
 use std::{
     sync::{Arc, Mutex},
@@ -12,7 +13,7 @@ use super::websocket_connection::WebSocketConnection;
 use super::websocket_message::{
     webSocketMessage::Type, WebSocketMessage, WebSocketRequestMessage, WebSocketResponseMessage,
 };
-use crate::{db::Strategy, error::Error, utils::post_allowed::post_allowed};
+use crate::{db::Strategy, utils::post_allowed::post_allowed};
 
 const PUSH_TIMEOUT: Duration = Duration::from_secs(5);
 
@@ -58,11 +59,7 @@ impl WebSocketConnection for SignalWebSocket {
 }
 
 impl SignalWebSocket {
-    pub fn new(
-        connect_addr: String,
-        push_endpoint: String,
-        strategy: Strategy,
-    ) -> Result<Self, Error> {
+    pub fn new(connect_addr: String, push_endpoint: String, strategy: Strategy) -> Result<Self> {
         let connect_addr = url::Url::parse(&connect_addr)?;
         let push_endpoint = url::Url::parse(&push_endpoint)?;
         Ok(Self {
@@ -77,7 +74,7 @@ impl SignalWebSocket {
         })
     }
 
-    pub async fn connection_loop(&mut self) -> Result<(), Error> {
+    pub async fn connection_loop(&mut self) -> Result<()> {
         let mut count = 0;
         loop {
             let instant = Instant::now();
