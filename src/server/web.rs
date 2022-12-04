@@ -37,7 +37,7 @@ enum RegistrationStatus {
 
 impl From<RegistrationStatus> for String {
     fn from(r: RegistrationStatus) -> Self {
-        String::from(match r {
+        match r {
             RegistrationStatus::New | RegistrationStatus::Updated | RegistrationStatus::Running => {
                 "ok"
             }
@@ -45,7 +45,8 @@ impl From<RegistrationStatus> for String {
             RegistrationStatus::InvalidUuid => "invalid_uuid",
             RegistrationStatus::InvalidEndpoint => "invalid_endpoint",
             RegistrationStatus::InternalError => "internal_error",
-        })
+        }
+        .into()
     }
 }
 
@@ -109,33 +110,34 @@ fn new_connection(co_data: Json<ConnectionData>) -> Result<(), Error> {
 
 async fn registration_status(co_data: &ConnectionData) -> RegistrationStatus {
     let endpoint_valid = CONFIG.is_endpoint_valid(&co_data.endpoint).await;
-    if CONFIG.is_uuid_valid(&co_data.uuid) {
-        if let Ok(co) = DB.get(&co_data.uuid) {
-            if co.forbidden {
-                return RegistrationStatus::Forbidden;
-            } else {
-                return if endpoint_valid {
-                    if &co.strategy.to_string().to_lowercase() == &co_data.strategy.to_lowercase()
-                        && &co.device_id == &co_data.device_id
-                        && &co.password == &co_data.password
-                        && &co.endpoint == &co_data.endpoint
-                    {
-                        RegistrationStatus::Running
-                    } else {
-                        RegistrationStatus::Updated
-                    }
-                } else {
-                    RegistrationStatus::InvalidEndpoint
-                };
-            }
-        }
-    } else {
+    let uuid_valid = CONFIG.is_uuid_valid(&co_data.uuid);
+
+    if !uuid_valid {
         return RegistrationStatus::InvalidUuid;
     }
-    if endpoint_valid {
-        RegistrationStatus::New
+
+    if !endpoint_valid {
+        return RegistrationStatus::InvalidEndpoint;
+    }
+
+    let co = match DB.get(&co_data.uuid) {
+        Ok(co) => co,
+        Err(_) => {
+            return RegistrationStatus::New;
+        }
+    };
+
+    if co.device_id == co_data.device_id && co.password == co_data.password {
+        // Credentials are not updated
+        if co.forbidden {
+            return RegistrationStatus::Forbidden;
+        } else if co.endpoint != co_data.endpoint {
+            return RegistrationStatus::Updated;
+        } else {
+            return RegistrationStatus::Running;
+        }
     } else {
-        RegistrationStatus::InvalidEndpoint
+        return RegistrationStatus::Updated;
     }
 }
 

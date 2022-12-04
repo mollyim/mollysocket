@@ -1,4 +1,4 @@
-use std::{error, fmt::Display};
+use std::{error::Error as StdError, fmt::Display};
 use tokio_tungstenite::tungstenite;
 
 #[derive(Debug)]
@@ -14,7 +14,21 @@ pub enum Error {
     ParseError,
 }
 
-impl error::Error for Error {}
+impl StdError for Error {
+    fn source(&self) -> Option<&(dyn StdError + 'static)> {
+        match self {
+            Error::Db(e) => Some(e),
+            Error::Ws(e) => Some(e),
+            Error::Tls(e) => Some(e),
+            Error::Url(e) => Some(e),
+            Error::Reqwest(e) => Some(e),
+            Error::HostNotAllowed => None,
+            Error::SchemeNotAllowed => None,
+            Error::EndpointForbidden => None,
+            Error::ParseError => None,
+        }
+    }
+}
 
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

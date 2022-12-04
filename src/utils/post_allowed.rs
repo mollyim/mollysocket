@@ -14,19 +14,17 @@ lazy_static! {
     static ref RESOLVER: TokioAsyncResolver = TokioAsyncResolver::tokio_from_system_conf().unwrap();
 }
 
-pub async fn post_allowed<'a>(
-    url: Url,
-    body: &[(&'a str, &'a str)],
-) -> Result<reqwest::Response, Error> {
+pub async fn post_allowed(url: Url, body: &[(&str, &str)]) -> Result<reqwest::Response, Error> {
+    let port = match url.port() {
+        Some(p) => p,
+        None if url.scheme() == "http" => 80,
+        None if url.scheme() == "https" => 443,
+        _ => return Err(Error::SchemeNotAllowed),
+    };
+
     let client = if CONFIG.is_endpoint_allowed_by_user(&url) {
         reqwest::ClientBuilder::new().redirect(Policy::none())
     } else {
-        let port = match url.port() {
-            Some(p) => p,
-            None if url.scheme() == "http" => 80,
-            None if url.scheme() == "https" => 443,
-            _ => return Err(Error::SchemeNotAllowed),
-        };
         let resolved_socket_addrs = url
             .resolve_allowed()
             .await?
@@ -34,7 +32,7 @@ pub async fn post_allowed<'a>(
             .map(|ip| SocketAddr::new(ip, port))
             .collect::<Vec<SocketAddr>>();
 
-        if resolved_socket_addrs.len().eq(&0) {
+        if resolved_socket_addrs.is_empty() {
             log::info!(
                 "Ignoring request to {}: no allowed ip",
                 url.host_str().unwrap_or(&"No host")
@@ -45,7 +43,7 @@ pub async fn post_allowed<'a>(
         reqwest::ClientBuilder::new()
             .redirect(Policy::none())
             .no_trust_dns()
-            .resolve_to_addrs(url.host_str().unwrap(), dbg!(&resolved_socket_addrs))
+            .resolve_to_addrs(url.host_str().unwrap(), &resolved_socket_addrs)
     }
     .build()
     .unwrap();
@@ -61,9 +59,11 @@ pub trait ResolveAllowed {
 #[async_trait]
 impl ResolveAllowed for Url {
     async fn resolve_allowed(&self) -> Result<Vec<IpAddr>, Error> {
-        dbg!(&self);
         if ["http", "https"].contains(&self.scheme()) {
-            self.host().unwrap().resolve_allowed().await
+            self.host()
+                .ok_or(Error::HostNotAllowed)?
+                .resolve_allowed()
+                .await
         } else {
             Err(Error::SchemeNotAllowed)
         }
@@ -78,7 +78,7 @@ impl ResolveAllowed for Host<&str> {
                 RESOLVER
                     .lookup_ip(*d)
                     .await
-                    .unwrap()
+                    .map_err(|_| Error::HostNotAllowed)?
                     .resolve_allowed()
                     .await
             }

@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use futures_channel::mpsc;
-use futures_util::{pin_mut, select, FutureExt, StreamExt};
+use futures_util::{pin_mut, select, FutureExt, SinkExt, StreamExt};
 use native_tls::TlsConnector;
 use prost::Message;
 use std::{
@@ -68,7 +68,7 @@ pub trait WebSocketConnection {
             .fuse();
 
         let from_keepalive_handle = timer_rx
-            .for_each(|_| async { self.send_keepalive() })
+            .for_each(|_| async { self.send_keepalive().await })
             .fuse();
 
         let to_keepalive_handle = self.loop_keepalive(timer_tx).fuse();
@@ -93,39 +93,32 @@ pub trait WebSocketConnection {
     async fn handle_message(&self, message: tungstenite::Message) {
         let data = message.into_data();
         let ws_message = match WebSocketMessage::decode(&data[..]) {
-            Err(_) => {
-                log::warn!("Can't decode msg");
+            Ok(msg) => msg,
+            Err(e) => {
+                log::error!("Failed to decode protobuf: {}", e);
                 return ();
             }
-            Ok(msg) => msg,
         };
         self.on_message(ws_message).await;
     }
 
-    async fn loop_keepalive(&self, timer_tx: mpsc::UnboundedSender<bool>) {
-        let last_keepalive = self.get_last_keepalive();
-        loop {
-            if last_keepalive.lock().unwrap().elapsed() > KEEPALIVE_TIMEOUT {
-                log::warn!("Did not receive the last keepalive: aborting.");
-                break;
-            }
-            time::sleep(KEEPALIVE).await;
-            log::debug!("Sending Keepalive");
-            timer_tx.unbounded_send(true).unwrap();
+    async fn send_message(&self, message: WebSocketMessage) {
+        if let Some(mut tx) = self.get_tx().as_ref() {
+            let bytes = message.encode_to_vec();
+            tx.send(tungstenite::Message::binary(bytes)).await.unwrap();
         }
     }
 
-    fn send(&self, message: WebSocketMessage) {
-        if let Some(tx) = self.get_tx().as_ref() {
-            let mut buf = Vec::new();
-            buf.reserve(message.encoded_len());
-            message.encode(&mut buf).unwrap();
-            tx.unbounded_send(tungstenite::Message::Binary(buf))
-                .unwrap();
-        }
+    async fn send_response(&self, response: WebSocketResponseMessage) {
+        let message = WebSocketMessage {
+            r#type: Some(Type::RESPONSE as i32),
+            response: Some(response),
+            request: None,
+        };
+        self.send_message(message).await;
     }
 
-    fn send_keepalive(&self) {
+    async fn send_keepalive(&self) {
         log::debug!("send_keepalive");
         let message = WebSocketMessage {
             r#type: Some(Type::REQUEST as i32),
@@ -143,15 +136,19 @@ pub trait WebSocketConnection {
                 ),
             }),
         };
-        self.send(message);
+        self.send_message(message).await;
     }
 
-    fn send_response(&self, response: WebSocketResponseMessage) {
-        let message = WebSocketMessage {
-            r#type: Some(Type::RESPONSE as i32),
-            response: Some(response),
-            request: None,
-        };
-        self.send(message);
+    async fn loop_keepalive(&self, timer_tx: mpsc::UnboundedSender<bool>) {
+        let last_keepalive = self.get_last_keepalive();
+        loop {
+            if last_keepalive.lock().unwrap().elapsed() > KEEPALIVE_TIMEOUT {
+                log::warn!("Did not receive the last keepalive: aborting.");
+                break;
+            }
+            time::sleep(KEEPALIVE).await;
+            log::debug!("Sending Keepalive");
+            timer_tx.unbounded_send(true).unwrap();
+        }
     }
 }

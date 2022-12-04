@@ -37,7 +37,7 @@ impl WebSocketConnection for SignalWebSocket {
     }
 
     fn set_tx(&mut self, tx: Option<mpsc::UnboundedSender<tungstenite::Message>>) {
-        self.tx = tx
+        self.tx = tx;
     }
 
     fn get_last_keepalive(&self) -> Arc<Mutex<Instant>> {
@@ -45,14 +45,15 @@ impl WebSocketConnection for SignalWebSocket {
     }
 
     async fn on_message(&self, message: WebSocketMessage) {
-        match message.r#type {
-            Some(type_int) => match Type::from_i32(type_int) {
-                Some(Type::RESPONSE) => self.on_response(message.response),
-                Some(Type::REQUEST) => self.on_request(message.request).await,
-                _ => (),
-            },
-            None => (),
-        };
+        if let Some(type_int) = message.r#type {
+            if let Some(type_) = Type::from_i32(type_int) {
+                match type_ {
+                    Type::RESPONSE => self.on_response(message.response),
+                    Type::REQUEST => self.on_request(message.request).await,
+                    _ => (),
+                };
+            }
+        }
     }
 }
 
@@ -100,7 +101,7 @@ impl SignalWebSocket {
         log::debug!("New response");
         if let Some(_) = response {
             let mut keepalive = self.last_keepalive.lock().unwrap();
-            *keepalive = Instant::now()
+            *keepalive = Instant::now();
         }
     }
 
@@ -110,9 +111,9 @@ impl SignalWebSocket {
     async fn on_request(&self, request: Option<WebSocketRequestMessage>) {
         log::debug!("New request");
         if let Some(request) = request {
-            if self.read_or_empty(request) {
+            if self.read_or_empty(request).await {
                 if self.waiting_timeout_reached() {
-                    self.notify().await;
+                    self.send_push().await;
                 } else {
                     log::debug!("The waiting timeout is not reached: the request is ignored.");
                 }
@@ -120,12 +121,12 @@ impl SignalWebSocket {
         }
     }
 
-    fn read_or_empty(&self, request: WebSocketRequestMessage) -> bool {
+    async fn read_or_empty(&self, request: WebSocketRequestMessage) -> bool {
         // dbg!(&request.path);
         let response = self.create_websocket_response(&request);
         // dbg!(&response);
         if self.is_signal_service_envelope(&request) {
-            self.send_response(response);
+            self.send_response(response).await;
             return true;
         }
         false
@@ -171,7 +172,7 @@ impl SignalWebSocket {
         }
     }
 
-    async fn notify(&self) {
+    async fn send_push(&self) {
         log::debug!("Sending the notification.");
         {
             let mut instant = self.push_instant.lock().unwrap();
