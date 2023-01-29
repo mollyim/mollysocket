@@ -18,6 +18,5 @@ lazy_static! {
 #[tokio::main]
 async fn main() {
     env_logger::init();
-    // dbg!(&*CONFIG);
     cli::cli().await;
 }

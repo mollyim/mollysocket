@@ -1,4 +1,4 @@
-use std::{default::Default, fmt::Debug};
+use std::{default::Default, env, fmt::Debug};
 use user_config::{Environment, UserConfig};
 
 use crate::utils::post_allowed::ResolveAllowed;
@@ -17,8 +17,17 @@ impl Default for Config {
     }
 }
 
+fn pdebug_conf() {
+    let file = match env::var_os("MOLLY_CONF") {
+        Some(path) => path.into_string().unwrap_or("Error".to_string()),
+        None => "Default".to_string(),
+    };
+    log::debug!("Config file: {}", file);
+}
+
 impl Config {
     pub fn load(opt_user_cfg: Option<UserConfig>) -> Config {
+        pdebug_conf();
         let user_cfg = if let Some(cfg) = opt_user_cfg {
             cfg
         } else {
