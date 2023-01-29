@@ -1,15 +1,17 @@
-use crate::db::MollySocketDb;
+use crate::{db::MollySocketDb, server::metrics::Metrics};
 use futures_util::{future::join, pin_mut, select, FutureExt};
 use lazy_static::lazy_static;
 use std::sync::{Arc, Mutex};
 use tokio::signal;
 
 mod connections;
+mod metrics;
 mod web;
 
 lazy_static! {
-    static ref REFS: Arc<Mutex<Vec<connections::LoopRef>>> = Arc::new(Mutex::new(vec![]));
     static ref DB: MollySocketDb = MollySocketDb::new().unwrap();
+    static ref METRICS: Metrics = Metrics::new().unwrap();
+    static ref REFS: Arc<Mutex<Vec<connections::LoopRef>>> = Arc::new(Mutex::new(vec![]));
     static ref TX: Arc<Mutex<connections::OptSender>> = Arc::new(Mutex::new(None));
 }
 

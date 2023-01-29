@@ -9,7 +9,7 @@ use rocket::{
 };
 use std::{collections::HashMap, str::FromStr, time::SystemTime};
 
-use super::{DB, TX};
+use super::{metrics::MountMetrics, DB, METRICS, TX};
 
 #[derive(Serialize)]
 struct Response {
@@ -149,6 +149,7 @@ fn gen_rep(mut map: HashMap<String, String>) -> Json<Response> {
 pub async fn launch() {
     let _ = rocket::build()
         .mount("/", routes![discover, register])
+        .mount_metrics("/metrics", &METRICS)
         .launch()
         .await;
 }

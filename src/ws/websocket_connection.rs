@@ -24,8 +24,8 @@ const KEEPALIVE_TIMEOUT: Duration = Duration::from_secs(40);
 #[async_trait(?Send)]
 pub trait WebSocketConnection {
     fn get_url(&self) -> &url::Url;
-    fn get_tx(&self) -> &Option<mpsc::UnboundedSender<tungstenite::Message>>;
-    fn set_tx(&mut self, tx: Option<mpsc::UnboundedSender<tungstenite::Message>>);
+    fn get_websocket_tx(&self) -> &Option<mpsc::UnboundedSender<tungstenite::Message>>;
+    fn set_websocket_tx(&mut self, tx: Option<mpsc::UnboundedSender<tungstenite::Message>>);
     fn get_last_keepalive(&self) -> Arc<Mutex<Instant>>;
     async fn on_message(&self, message: WebSocketMessage);
 
@@ -53,7 +53,7 @@ pub trait WebSocketConnection {
         let (timer_tx, timer_rx) = mpsc::unbounded();
 
         // Saving to socket Sender
-        self.set_tx(Some(tx));
+        self.set_websocket_tx(Some(tx));
 
         // handlers
         let to_ws_handle = rx.map(Ok).forward(ws_write).fuse();
@@ -103,7 +103,7 @@ pub trait WebSocketConnection {
     }
 
     async fn send_message(&self, message: WebSocketMessage) {
-        if let Some(mut tx) = self.get_tx().as_ref() {
+        if let Some(mut tx) = self.get_websocket_tx().as_ref() {
             let bytes = message.encode_to_vec();
             tx.send(tungstenite::Message::binary(bytes)).await.unwrap();
         }

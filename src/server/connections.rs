@@ -1,12 +1,12 @@
 use crate::{
-    db::Connection,
-    server::{DB, REFS, TX},
+    db::{Connection, Strategy},
+    server::{DB, METRICS, REFS, TX},
     ws::SignalWebSocket,
     CONFIG,
 };
 use eyre::Result;
 use futures_channel::mpsc::{self, UnboundedReceiver, UnboundedSender};
-use futures_util::{future::join_all, join, select, FutureExt, StreamExt};
+use futures_util::{future::join_all, join, select, Future, FutureExt, StreamExt};
 use tokio_tungstenite::tungstenite;
 
 pub struct LoopRef {
@@ -23,13 +23,13 @@ pub async fn run() {
         .map(|co| connection_loop(co).fuse())
         .collect();
 
-    let (tx, rx) = mpsc::unbounded();
+    let (new_connections_tx, new_connections_rx) = mpsc::unbounded();
     {
         let mut s_tx = TX.lock().unwrap();
-        *s_tx = Some(tx);
+        *s_tx = Some(new_connections_tx);
     }
 
-    let new_loops = gen_new_loops(rx).fuse();
+    let new_loops = gen_new_loops(new_connections_rx).fuse();
 
     join!(join_all(loops), new_loops);
 }
@@ -48,13 +48,6 @@ async fn connection_loop(co: &mut Connection) {
         return;
     }
     log::info!("Starting connection for {}", &co.uuid);
-    let (tx, mut rx) = mpsc::unbounded();
-    {
-        REFS.lock().unwrap().push(LoopRef {
-            uuid: co.uuid.clone(),
-            tx,
-        });
-    }
     let mut socket = match SignalWebSocket::new(
         CONFIG.get_ws_endpoint(&co.uuid, co.device_id, &co.password),
         co.endpoint.clone(),
@@ -66,13 +59,56 @@ async fn connection_loop(co: &mut Connection) {
             return;
         }
     };
+    let metrics_future = set_metrics(&mut socket, co.strategy.clone());
+    // Add the channel to kill the connection if needed
+    let (kill_tx, mut kill_rx) = mpsc::unbounded();
+    {
+        REFS.lock().unwrap().push(LoopRef {
+            uuid: co.uuid.clone(),
+            tx: kill_tx,
+        });
+    }
+    METRICS.connections.inc();
+    // loop
     select!(
         res = socket.connection_loop().fuse() => handle_connection_closed(res, co),
-        _ = rx.next().fuse() => log::info!("Connection killed"),
+        _ = kill_rx.next().fuse() => log::info!("Connection killed"),
+        _ = metrics_future.fuse() => log::warn!("One of the metrics channel has been closed."),
     );
+    // Remove the channel to kill the connection
     let mut refs = REFS.lock().unwrap();
     if let Some(i_ref) = refs.iter().position(|l_ref| l_ref.uuid.eq(&co.uuid)) {
         refs.remove(i_ref);
+    }
+    METRICS.connections.dec();
+}
+
+fn set_metrics(socket: &mut SignalWebSocket, strategy: Strategy) -> impl Future<Output = ()> {
+    let strategy_type = strategy.to_string();
+    let (on_message_tx, on_message_rx) = mpsc::unbounded::<u32>();
+    let (on_push_tx, on_push_rx) = mpsc::unbounded::<u32>();
+    let (on_reconnection_tx, on_reconnection_rx) = mpsc::unbounded::<u32>();
+    socket.channels.on_message_tx = Some(on_message_tx);
+    socket.channels.on_push_tx = Some(on_push_tx);
+    socket.channels.on_reconnection_tx = Some(on_reconnection_tx);
+    async move {
+        select!(
+            _ = on_message_rx
+                .for_each(|_| async {
+                    METRICS.messages.with_label_values(&[&strategy_type]).inc();
+                })
+                .fuse() => (),
+            _ = on_push_rx
+                .for_each(|_| async {
+                    METRICS.pushs.with_label_values(&[&strategy_type]).inc();
+                })
+                .fuse() => (),
+            _ = on_reconnection_rx
+                .for_each(|_| async {
+                    METRICS.reconnections.inc();
+                })
+                .fuse() => (),
+        )
     }
 }
 

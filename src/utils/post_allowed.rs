@@ -6,7 +6,6 @@ use std::{
     error::Error as StdError,
     fmt::{Display, Formatter},
     net::{IpAddr, SocketAddr},
-    str::FromStr,
 };
 use trust_dns_resolver::{lookup_ip::LookupIp, TokioAsyncResolver};
 use url::{Host, Url};

@@ -977,6 +977,7 @@ dependencies = [
  "prost",
  "reqwest",
  "rocket",
+ "rocket_prometheus",
  "rusqlite",
  "serde",
  "tokio",
@@ -1214,6 +1215,20 @@ dependencies = [
  "syn",
  "version_check",
  "yansi",
+]
+
+[[package]]
+name = "prometheus"
+version = "0.13.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "449811d15fbdf5ceb5c1144416066429cf82316e2ec8ce0c1f6f8a02e7bbcf8c"
+dependencies = [
+ "cfg-if 1.0.0",
+ "fnv",
+ "lazy_static",
+ "memchr",
+ "parking_lot",
+ "thiserror",
 ]
 
 [[package]]
@@ -1486,6 +1501,16 @@ dependencies = [
  "time",
  "tokio",
  "uncased",
+]
+
+[[package]]
+name = "rocket_prometheus"
+version = "0.10.0-rc.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e3e70efcf6b0234723d0d295b95d64283ed02bb98a8a3f0c8c7ebb5b8da69165"
+dependencies = [
+ "prometheus",
+ "rocket",
 ]
 
 [[package]]
