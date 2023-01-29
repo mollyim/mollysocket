@@ -13,7 +13,7 @@ pub struct MollySocketDb {
     db: Arc<Mutex<rusqlite::Connection>>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Strategy {
     Websocket,
     Rest,

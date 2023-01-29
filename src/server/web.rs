@@ -120,6 +120,11 @@ async fn registration_status(co_data: &ConnectionData) -> RegistrationStatus {
         return RegistrationStatus::InvalidEndpoint;
     }
 
+    let strategy = match Strategy::from_str(&co_data.strategy) {
+        Ok(strategy) => strategy,
+        _ => return RegistrationStatus::InternalError,
+    };
+
     let co = match DB.get(&co_data.uuid) {
         Ok(co) => co,
         Err(_) => {
@@ -131,7 +136,7 @@ async fn registration_status(co_data: &ConnectionData) -> RegistrationStatus {
         // Credentials are not updated
         if co.forbidden {
             return RegistrationStatus::Forbidden;
-        } else if co.endpoint != co_data.endpoint {
+        } else if co.endpoint != co_data.endpoint || co.strategy != strategy {
             return RegistrationStatus::Updated;
         } else {
             return RegistrationStatus::Running;
