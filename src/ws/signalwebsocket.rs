@@ -101,7 +101,7 @@ impl SignalWebSocket {
                 let mut keepalive = self.last_keepalive.lock().unwrap();
                 *keepalive = Instant::now();
             }
-            self.connect(tls::build_tls_connector()?).await?;
+            let _ = self.connect(tls::build_tls_connector()?).await;
             if let Some(duration) = Instant::now().checked_duration_since(instant) {
                 if duration > Duration::from_secs(60) {
                     count = 0;
