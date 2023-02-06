@@ -29,6 +29,9 @@ pub async fn cli() {
         Some(cmd) if cmd == "connection" || cmd == "c" => connection::connection(args).await,
         Some(cmd) if cmd == "server" || cmd == "s" => server::server(args).await,
         Some(cmd) if cmd == "test" || cmd == "t" => test::test(args).await,
+        Some(cmd) if cmd == "--version" => {
+            println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"))
+        }
         _ => usage(),
     }
 }
