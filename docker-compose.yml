@@ -1,0 +1,17 @@
+version: "3"
+
+services:
+  mollysocket:
+    image: ghcr.io/mollysocket/mollysocket:0
+    container_name: mollysocket
+    restart: always
+    volumes:
+      - ./data:/data
+    command: server
+    environment:
+      - MOLLY_CONF=/data/ms.toml
+      - ROCKET_PORT=8020
+      - ROCKET_ADDRESS=0.0.0.0
+      - RUST_LOG=info
+    ports:
+      - "8020:8020"
