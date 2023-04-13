@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 async-trait = "0.1.58"
 confy = "0.5.0"
-env_logger = "0.9.1"
+env_logger = "0.10.0"
 futures-channel = "0.3"
 futures-util = "0.3"
 http = "0.2.4"
@@ -18,10 +18,10 @@ native-tls = "0.2.10"
 prost = "0.11"
 reqwest = { version = "0.11.12", features = ["json"]}
 serde = { version = "1.0.147", features = ["derive"]}
-tokio-tungstenite = { version = "0.17.2", features = ["native-tls"] }
+tokio-tungstenite = { version = "0.18.0", features = ["native-tls"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 url = "2.0.0"
-rusqlite = "0.28.0"
+rusqlite = "0.29.0"
 rocket = { version = "0.5.0-rc.2", features = ["json"]}
 rocket_prometheus = "0.10.0-rc.3"
 trust-dns-resolver = { version = "0.22.0", features = ["tokio-runtime"]}
