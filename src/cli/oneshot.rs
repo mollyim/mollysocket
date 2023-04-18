@@ -1,13 +1,10 @@
-use crate::{db::Strategy, ws::SignalWebSocket};
-use std::{
-    env::{self, Args},
-    str::FromStr,
-};
+use crate::ws::SignalWebSocket;
+use std::env::{self, Args};
 
 fn usage() {
     println!(
         "
-Usage: {} oneshot wss://signal.server.tld/path https://push.server.ltd/id [strategy]
+Usage: {} oneshot wss://signal.server.tld/path https://push.server.ltd/id
 
 Strategies:
   rest        Send all messages
@@ -39,15 +36,8 @@ pub async fn oneshot(args: Args) {
         }
     }
     .clone();
-    let strategy = match argv.get(2) {
-        Some(argv3) => Strategy::from_str(argv3).unwrap_or(Strategy::Websocket),
-        None => {
-            usage();
-            return;
-        }
-    };
 
-    let _ = SignalWebSocket::new(connect_addr, push_endpoint, strategy)
+    let _ = SignalWebSocket::new(connect_addr, push_endpoint)
         .unwrap()
         .connection_loop()
         .await;

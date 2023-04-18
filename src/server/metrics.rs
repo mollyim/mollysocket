@@ -3,18 +3,15 @@ use std::fmt::Display;
 use eyre::Result;
 use rocket::{http::uri::Origin, Build, Rocket};
 use rocket_prometheus::{
-    prometheus::{
-        register_int_counter, register_int_counter_vec, register_int_gauge, IntCounter,
-        IntCounterVec, IntGauge,
-    },
+    prometheus::{register_int_counter, register_int_gauge, IntCounter, IntGauge},
     PrometheusMetrics,
 };
 
 pub struct Metrics {
     pub connections: IntGauge,
     pub reconnections: IntCounter,
-    pub messages: IntCounterVec,
-    pub pushs: IntCounterVec,
+    pub messages: IntCounter,
+    pub pushs: IntCounter,
 }
 
 impl Metrics {
@@ -23,15 +20,11 @@ impl Metrics {
             register_int_gauge!("mollysocket_connections", "Connections to Signal server")?;
         let reconnections =
             register_int_counter!("mollysocket_reconnections", "Reconnections since the start")?;
-        let messages = register_int_counter_vec!(
-            "mollysocket_messages",
-            "Messages received from Signal",
-            &["type"]
-        )?;
-        let pushs = register_int_counter_vec!(
+        let messages =
+            register_int_counter!("mollysocket_messages", "Messages received from Signal")?;
+        let pushs = register_int_counter!(
             "mollysocket_pushs",
-            "Push messages sent to UnifiedPush endpoint",
-            &["type"]
+            "Push messages sent to UnifiedPush endpoint"
         )?;
 
         Ok(Self {

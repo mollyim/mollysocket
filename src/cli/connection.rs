@@ -1,11 +1,8 @@
 use crate::{
-    db::{self, OptTime, Strategy},
+    db::{self, OptTime},
     CONFIG,
 };
-use std::{
-    env::{self, Args},
-    str::FromStr,
-};
+use std::env::{self, Args};
 
 fn usage() {
     println!(
@@ -13,13 +10,9 @@ fn usage() {
 Usage: {} connection [command] [args, ...]
 
 Commands:            
-  add [uuid] [device_id] [password] [endpoint] [strategy]
+  add [uuid] [device_id] [password] [endpoint]
   list
   rm [uuid]
-
-Strategies:
-  rest        Send all messages
-  websocket   Send all messages at least 5 seconds apart
 ",
         env::args().nth(0).unwrap()
     );
@@ -89,28 +82,11 @@ async fn add(mut argv: Vec<String>) {
         }
     }
     .clone();
-    let strategy = match argv.get(4) {
-        Some(argv5) => match Strategy::from_str(argv5) {
-            Ok(s) => s,
-            Err(_) => {
-                println!("Invalid strategy: {}", argv5);
-                usage();
-                return;
-            }
-        },
-        None => {
-            usage();
-            return;
-        }
-    }
-    .clone();
-
     let _ = db::MollySocketDb::new().unwrap().add(&db::Connection {
         uuid: uuid.clone(),
         device_id,
         password,
         endpoint,
-        strategy,
         forbidden: false,
         last_registration: OptTime(None),
     });

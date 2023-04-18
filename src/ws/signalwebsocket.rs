@@ -13,7 +13,7 @@ use super::websocket_connection::WebSocketConnection;
 use super::websocket_message::{
     webSocketMessage::Type, WebSocketMessage, WebSocketRequestMessage, WebSocketResponseMessage,
 };
-use crate::{db::Strategy, utils::post_allowed::post_allowed};
+use crate::utils::post_allowed::post_allowed;
 
 const PUSH_TIMEOUT: Duration = Duration::from_secs(5);
 
@@ -40,7 +40,6 @@ impl Channels {
 pub struct SignalWebSocket {
     connect_addr: url::Url,
     push_endpoint: url::Url,
-    strategy: Strategy,
     pub channels: Channels,
     push_instant: Arc<Mutex<Instant>>,
     last_keepalive: Arc<Mutex<Instant>>,
@@ -78,13 +77,12 @@ impl WebSocketConnection for SignalWebSocket {
 }
 
 impl SignalWebSocket {
-    pub fn new(connect_addr: String, push_endpoint: String, strategy: Strategy) -> Result<Self> {
+    pub fn new(connect_addr: String, push_endpoint: String) -> Result<Self> {
         let connect_addr = url::Url::parse(&connect_addr)?;
         let push_endpoint = url::Url::parse(&push_endpoint)?;
         Ok(Self {
             connect_addr,
             push_endpoint,
-            strategy,
             channels: Channels::none(),
             push_instant: Arc::new(Mutex::new(
                 Instant::now().checked_sub(PUSH_TIMEOUT).unwrap(),
@@ -209,9 +207,6 @@ impl SignalWebSocket {
     }
 
     fn waiting_timeout_reached(&self) -> bool {
-        if let Strategy::Rest = self.strategy {
-            return true;
-        }
         let instant = self.push_instant.lock().unwrap();
         instant.elapsed() > PUSH_TIMEOUT
     }

@@ -1,5 +1,5 @@
 use crate::{
-    db::{Connection, Strategy},
+    db::Connection,
     server::{DB, METRICS, REFS, TX},
     ws::SignalWebSocket,
     CONFIG,
@@ -51,7 +51,6 @@ async fn connection_loop(co: &mut Connection) {
     let mut socket = match SignalWebSocket::new(
         CONFIG.get_ws_endpoint(&co.uuid, co.device_id, &co.password),
         co.endpoint.clone(),
-        co.strategy.clone(),
     ) {
         Ok(s) => s,
         Err(e) => {
@@ -59,7 +58,7 @@ async fn connection_loop(co: &mut Connection) {
             return;
         }
     };
-    let metrics_future = set_metrics(&mut socket, co.strategy.clone());
+    let metrics_future = set_metrics(&mut socket);
     // Add the channel to kill the connection if needed
     let (kill_tx, mut kill_rx) = mpsc::unbounded();
     {
@@ -83,8 +82,7 @@ async fn connection_loop(co: &mut Connection) {
     METRICS.connections.dec();
 }
 
-fn set_metrics(socket: &mut SignalWebSocket, strategy: Strategy) -> impl Future<Output = ()> {
-    let strategy_type = strategy.to_string();
+fn set_metrics(socket: &mut SignalWebSocket) -> impl Future<Output = ()> {
     let (on_message_tx, on_message_rx) = mpsc::unbounded::<u32>();
     let (on_push_tx, on_push_rx) = mpsc::unbounded::<u32>();
     let (on_reconnection_tx, on_reconnection_rx) = mpsc::unbounded::<u32>();
@@ -95,12 +93,12 @@ fn set_metrics(socket: &mut SignalWebSocket, strategy: Strategy) -> impl Future<
         select!(
             _ = on_message_rx
                 .for_each(|_| async {
-                    METRICS.messages.with_label_values(&[&strategy_type]).inc();
+                    METRICS.messages.inc();
                 })
                 .fuse() => (),
             _ = on_push_rx
                 .for_each(|_| async {
-                    METRICS.pushs.with_label_values(&[&strategy_type]).inc();
+                    METRICS.pushs.inc();
                 })
                 .fuse() => (),
             _ = on_reconnection_rx
