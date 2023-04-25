@@ -45,6 +45,7 @@ pub async fn gen_new_loops(rx: UnboundedReceiver<Connection>) {
 async fn connection_loop(co: &mut Connection) {
     if co.forbidden {
         log::info!("Ignoring connection for {}", &co.uuid);
+        METRICS.forbiddens.inc();
         return;
     }
     log::info!("Starting connection for {}", &co.uuid);
@@ -123,6 +124,7 @@ fn handle_connection_closed(res: Result<()>, co: &mut Connection) {
                     if status == 403 {
                         co.forbidden = true;
                         let _ = DB.add(co);
+                        METRICS.forbiddens.inc()
                     }
                 }
             }

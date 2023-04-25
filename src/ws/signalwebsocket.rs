@@ -99,7 +99,15 @@ impl SignalWebSocket {
                 let mut keepalive = self.last_keepalive.lock().unwrap();
                 *keepalive = Instant::now();
             }
-            let _ = self.connect(tls::build_tls_connector()?).await;
+            if let Err(e) = self.connect(tls::build_tls_connector()?).await {
+                if let Some(http_error) = e.downcast_ref::<tungstenite::Error>() {
+                    if let tungstenite::Error::Http(resp) = http_error {
+                        if resp.status() == 403 {
+                            return Err(e);
+                        }
+                    }
+                }
+            }
             if let Some(duration) = Instant::now().checked_duration_since(instant) {
                 if duration > Duration::from_secs(60) {
                     count = 0;

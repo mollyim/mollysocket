@@ -9,6 +9,7 @@ use rocket_prometheus::{
 
 pub struct Metrics {
     pub connections: IntGauge,
+    pub forbiddens: IntGauge,
     pub reconnections: IntCounter,
     pub messages: IntCounter,
     pub pushs: IntCounter,
@@ -18,6 +19,10 @@ impl Metrics {
     pub fn new() -> Result<Self> {
         let connections =
             register_int_gauge!("mollysocket_connections", "Connections to Signal server")?;
+        let forbiddens = register_int_gauge!(
+            "mollysocket_forbiddens",
+            "Forbidden connections to Signal server"
+        )?;
         let reconnections =
             register_int_counter!("mollysocket_reconnections", "Reconnections since the start")?;
         let messages =
@@ -29,6 +34,7 @@ impl Metrics {
 
         Ok(Self {
             connections,
+            forbiddens,
             reconnections,
             messages,
             pushs,
@@ -53,6 +59,9 @@ impl MountMetrics for Rocket<Build> {
         let prom_registry = prometheus.registry();
         prom_registry
             .register(Box::new(metrics.connections.clone()))
+            .unwrap();
+        prom_registry
+            .register(Box::new(metrics.forbiddens.clone()))
             .unwrap();
         prom_registry
             .register(Box::new(metrics.reconnections.clone()))

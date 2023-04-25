@@ -74,6 +74,7 @@ async fn register(co_data: Json<ConnectionData>) -> Json<Response> {
                     if let Ok(_) = new_connection(co_data) {
                         log::debug!("Connection succeeded");
                         status = RegistrationStatus::Updated;
+                        METRICS.forbiddens.dec();
                     } else {
                         log::debug!("Could not start new connection");
                         status = RegistrationStatus::InternalError;
