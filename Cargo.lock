@@ -913,7 +913,7 @@ dependencies = [
 
 [[package]]
 name = "mollysocket"
-version = "0.2.2"
+version = "1.0.0-rc1"
 dependencies = [
  "async-trait",
  "confy",
