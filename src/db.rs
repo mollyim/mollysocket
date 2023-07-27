@@ -7,6 +7,8 @@ use std::{
 
 use crate::CONFIG;
 
+mod migrations;
+
 pub struct MollySocketDb {
     db: Arc<Mutex<rusqlite::Connection>>,
 }
