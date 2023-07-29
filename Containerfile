@@ -1,4 +1,4 @@
-FROM docker.io/rustlang/rust:nightly-buster as builder
+FROM docker.io/rust:buster as builder
 WORKDIR app
     
 COPY . .

@@ -98,8 +98,8 @@ impl ResolveAllowed for Host<&str> {
                     .resolve_allowed()
                     .await
             }
-            Host::Ipv4(ip) if ip.is_global() => Ok(vec![IpAddr::V4(ip.clone())]),
-            Host::Ipv6(ip) if ip.is_global() => Ok(vec![IpAddr::V6(ip.clone())]),
+            Host::Ipv4(ip) if ip_rfc::global_v4(ip) => Ok(vec![IpAddr::V4(ip.clone())]),
+            Host::Ipv6(ip) if ip_rfc::global_v6(ip) => Ok(vec![IpAddr::V6(ip.clone())]),
             _ => Err(eyre!(Error::HostNotAllowed)),
         }
     }
@@ -108,13 +108,14 @@ impl ResolveAllowed for Host<&str> {
 #[async_trait]
 impl ResolveAllowed for LookupIp {
     async fn resolve_allowed(&self) -> Result<Vec<IpAddr>> {
-        Ok(self.iter().filter(|ip| ip.is_global()).collect())
+        Ok(self.iter().filter(|ip| ip_rfc::global(ip)).collect())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::str::FromStr;
 
     async fn len_from_str(url: &str) -> usize {
         Url::from_str(url)

@@ -1,4 +1,3 @@
-#![feature(ip)]
 use lazy_static::lazy_static;
 
 use config::Config;
