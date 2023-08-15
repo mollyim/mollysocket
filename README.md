@@ -32,9 +32,6 @@ We are currently testing it and the efficiency of the different strategy. Your f
   * REST: Every time MollySocket receives a(n encrypted) data : it notifies Molly via UnifiedPush and Molly fetch using the rest strategy (that's a built-in strategy)
   * Websocket: Every time MollySocket receives a(n encrypted) data : it notifies Molly via UnifiedPush if it hasn't notified the last 5 seconds. Then Molly open the websocket for 20secs. This strategy avoid to reach some rate limit for some public provider such as https://ntfy.sh but may increase a little bit the battery drain.
 
-## Build
-
-Until is_global is stabilize (https://github.com/rust-lang/rust/issues/27709), it requires rust nightly to be compiled.
 
 ## About security
 
