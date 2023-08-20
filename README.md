@@ -1,17 +1,10 @@
 # MollySocket
 
-This software is still in alpha.
-
 MollySocket allows getting signal notifications via [UnifiedPush](https://unifiedpush.org/). It works like a linked device, which doesn't have encryption key, connected to the Signal server. Everytime it receives an encrypted event, it notifies your mobile via UnifiedPush.
 
 ## Status
-This is still in alpha.
-
-Review of the server code is welcomed.
 
 The associated pull request for Molly (android) can be found here: <https://github.com/mollyim/mollyim-android/pull/152>.
-
-We are currently testing it and the efficiency of the different strategy. Your feedback is welcome here: <https://github.com/MollySocket/mollysocket/issues/1>.
 
 ## Configuration
 * MollySocket web server does not provide TLS. It should be accessible behind a reverse proxy. It is possible to use MollySocket without the web server: see the Air Gaped mode on Android settings.
@@ -28,9 +21,7 @@ We are currently testing it and the efficiency of the different strategy. Your f
 
 ### Android
 * If MollySocket webserver is not accessible from the Internet, you can enable the **Air Gaped** mode. You will have to register your connection manually on MollySocket.
-* There are 2 different fetch strategies:
-  * REST: Every time MollySocket receives a(n encrypted) data : it notifies Molly via UnifiedPush and Molly fetch using the rest strategy (that's a built-in strategy)
-  * Websocket: Every time MollySocket receives a(n encrypted) data : it notifies Molly via UnifiedPush if it hasn't notified the last 5 seconds. Then Molly open the websocket for 20secs. This strategy avoid to reach some rate limit for some public provider such as https://ntfy.sh but may increase a little bit the battery drain.
+* Every time MollySocket receives a(n encrypted) data : it notifies Molly via UnifiedPush if it hasn't notified the last 5 seconds. Then Molly open the websocket for 60secs.
 
 
 ## About security
