@@ -21,19 +21,13 @@ jobs:
       - name: checkout code
         uses: actions/checkout@v2
 
-      - name: Generate lowercase repo name for docker registry
-        id: reponame
-        uses: ASzc/change-string-case-action@v5
-        with:
-          string: ${{ github.repository }}
-
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v4
         with:
           # list of Docker images to use as base name for tags
           images: |
-            ghcr.io/${{ steps.reponame.outputs.lowercase }}
+            ghcr.io/${{ github.repository }}
           # generate Docker tags based on the following events/attributes
           tags: |
             type=schedule
