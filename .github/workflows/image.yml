@@ -1,6 +1,7 @@
 name: Build Container image
 
 on:
+  workflow_dispatch:
   schedule:
     # rebuild latest regulary - to resolve CVEs in base images
     - cron: "0 10 * * *"
@@ -8,8 +9,7 @@ on:
     branches:
       - "**"
     tags:
-      - "v*.*.*"
-      - "*.*.*"
+      - "\\d+\\.\\d+\\.\\d+"
   pull_request:
     branches:
       - "main"
