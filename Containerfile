@@ -1,15 +1,15 @@
-FROM docker.io/rust:buster as builder
+FROM docker.io/rust:bookworm as builder
 WORKDIR app
     
 COPY . .
 RUN cargo build --release --bin mollysocket
 
 
-FROM docker.io/debian:buster as runtime
+FROM docker.io/debian:bookworm as runtime
 WORKDIR app
 
 RUN apt update && \
-    apt install -y openssl libssl-dev ca-certificates libssl1.1 libsqlite3-0
+    apt install -y libssl3 libsqlite3-0
 
 
 COPY --from=builder /app/target/release/mollysocket /usr/local/bin/
