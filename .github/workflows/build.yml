@@ -60,7 +60,7 @@ jobs:
         with:
           target: ${{ matrix.platform.target }}
           command: build
-          args: "--locked --release"
+          args: "--release"
           strip: true
 
       - name: Prepare for upload
