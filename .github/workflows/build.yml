@@ -1,0 +1,102 @@
+name: "Build, Test and Release"
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "**"
+    tags:
+      - "\\d+\\.\\d+\\.\\d+"
+  pull_request:
+    branches:
+      - "main"
+               
+jobs:
+  test:
+    name: "Test (rust unit)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies on Linux
+        run: sudo apt-get update --yes && sudo apt-get install --yes musl-tools libssl-dev libsqlite3-0
+
+      - name: Compile
+        uses: houseabsolute/actions-rust-cross@v0
+        with:
+          target: "x86_64-unknown-linux-gnu" 
+          command: test
+
+  build:
+    name: "Build (and Archive) binary"
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        platform:
+          - target: "x86_64-unknown-linux-musl"
+            suffix: "x86_64"
+          - target: "aarch64-unknown-linux-musl"
+            suffix: "aarch64"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update --yes && sudo apt-get install --yes libssl-dev libsqlite3-0
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Install musl-tools on Linux
+        run: sudo apt-get update --yes && sudo apt-get install --yes musl-tools
+        if: contains(matrix.platform.target, 'musl')
+
+      - name: Compile
+        uses: houseabsolute/actions-rust-cross@v0
+        with:
+          target: ${{ matrix.platform.target }}
+          command: build
+          args: "--locked --release"
+          strip: true
+
+      - name: Prepare for upload
+        run: mv "target/${{ matrix.platform.target }}/release/mollysocket" "mollysocket_${{matrix.platform.suffix}}"
+      
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: binary
+          path: "mollysocket_${{matrix.platform.suffix}}"
+
+  release:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    needs:
+      - test
+      - build
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: binary
+          path: dist/
+      
+      - name: Semantic-Release
+        uses: codfish/semantic-release-action@v2
+        with:
+          plugins: |-
+           [
+            "@semantic-release/commit-analyzer",
+            "@semantic-release/release-notes-generator",
+            [ "@semantic-release/github", {
+                "assets": [
+                  { "path": "dist/*" }
+                ]
+              }]
+           ]
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

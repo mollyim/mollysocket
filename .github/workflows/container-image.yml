@@ -16,6 +16,7 @@ on:
 
 jobs:
   build:
+    name: "Build and publish container image"
     runs-on: ubuntu-latest
     steps:
       - name: checkout code

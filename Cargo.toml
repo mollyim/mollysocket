@@ -19,6 +19,7 @@ log = "0.4.17"
 native-tls = "0.2.11"
 prost = "0.11"
 reqwest = { version = "0.11.18", features = ["json"]}
+openssl = { version = "0.10.57", features = ["vendored"] }
 serde = { version = "1.0.163", features = ["derive"]}
 tokio-tungstenite = { version = "0.18.0", features = ["native-tls"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
