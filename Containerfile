@@ -9,7 +9,7 @@ FROM docker.io/debian:bookworm as runtime
 WORKDIR app
 
 RUN apt update && \
-    apt install -y libssl3 libsqlite3-0
+    apt install -y libssl3 libsqlite3-0 ca-certificates
 
 
 COPY --from=builder /app/target/release/mollysocket /usr/local/bin/

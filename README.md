@@ -37,8 +37,7 @@ MollySocket receives the credentials for a linked device and does not receive an
 AGPLv3: see [LICENSE.txt](./LICENSE.txt).
 
 ## Disclaimer
-This project is NOT sponsored by or affiliated to Signal Messenger, Signal Foundation or the Molly project (*).
+This project is NOT sponsored by or affiliated to Signal Messenger or Signal Foundation.
 
 The software is produced independently of Signal and carries no guarantee about quality, security or anything else. Use at your own risk.
 
-\* But they are ok with name "MollySocket"
