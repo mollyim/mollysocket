@@ -22,6 +22,7 @@ struct ConnectionData {
     pub device_id: u32,
     pub password: String,
     pub endpoint: String,
+    pub primary: Option<bool>,
 }
 
 #[derive(Debug)]

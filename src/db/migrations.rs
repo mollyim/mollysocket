@@ -4,6 +4,7 @@ const CURRENT_VERSION: i32 = 1;
 
 pub trait Migration {
     fn migrate(&self) -> Result<()>;
+    fn set_current_version(&self) -> Result<()>;
 }
 
 impl Migration for rusqlite::Connection {
@@ -14,6 +15,10 @@ impl Migration for rusqlite::Connection {
             })?;
 
         // Upgrade version
+        self.set_current_version()
+    }
+
+    fn set_current_version(&self) -> Result<()> {
         Ok(self.pragma_update(None, "user_version", CURRENT_VERSION)?)
     }
 }

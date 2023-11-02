@@ -1,6 +1,7 @@
 use eyre::Result;
 use rusqlite::{self, Row};
 use std::{
+    dbg,
     sync::{Arc, Mutex},
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
@@ -8,6 +9,7 @@ use std::{
 use crate::CONFIG;
 
 mod migrations;
+use migrations::Migration;
 
 pub struct MollySocketDb {
     db: Arc<Mutex<rusqlite::Connection>>,
@@ -71,18 +73,23 @@ impl Connection {
 impl MollySocketDb {
     pub fn new() -> Result<MollySocketDb> {
         let db = rusqlite::Connection::open(CONFIG.user_cfg.db.clone())?;
-        db.execute_batch(
+        let res = db.execute_batch(
             "
-CREATE TABLE IF NOT EXISTS connections(
-    uuid TEXT UNIQUE ON CONFLICT REPLACE,
+CREATE TABLE connections(
+    uuid TEXT,
     device_id INTEGER,
     password TEXT,
     endpoint TEXT,
     forbidden BOOLEAN NOT NULL CHECK (forbidden IN (0, 1)),
-    last_registration INTEGER
-)
+    last_registration INTEGER,
+    CONSTRAINT unique_uuid_device_id UNIQUE (uuid, device_id) ON CONFLICT REPLACE
+);
             ",
-        )?;
+        );
+        match dbg!(res) {
+            Ok(_) => db.set_current_version()?,
+            Err(_) => db.migrate()?,
+        };
         Ok(MollySocketDb {
             db: Arc::new(Mutex::new(db)),
         })
@@ -131,7 +138,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_db() {
+    fn insert() {
         let db = MollySocketDb::new().unwrap();
         let uuid = "0d2ff653-3d88-43de-bcdb-f6657d3484e4";
         db.add(&Connection {
