@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-async-trait = "0.1.68"
+async-trait = "0.1.74"
 confy = "0.5.1"
 env_logger = "0.10.0"
 futures-channel = "0.3"
@@ -15,16 +15,16 @@ http = "0.2.9"
 # until https://github.com/rust-lang/rust/issues/27709 is merged
 ip_rfc = "0.1.0"
 lazy_static = "1.4.0"
-log = "0.4.17"
+log = "0.4.20"
 native-tls = "0.2.11"
 prost = "0.11"
-reqwest = { version = "0.11.18", features = ["json"]}
-serde = { version = "1.0.163", features = ["derive"]}
+reqwest = { version = "0.11.22", features = ["json"]}
+serde = { version = "1.0.190", features = ["derive"]}
 tokio-tungstenite = { version = "0.18.0", features = ["native-tls"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
-url = "2.3.1"
+url = "2.4.1"
 rusqlite = "0.29.0"
-rocket = { version = "0.5.0-rc.3", features = ["json"]}
+rocket = { version = "0.5.0-rc.4", features = ["json"]}
 rocket_prometheus = "0.10.0-rc.3"
 trust-dns-resolver = { version = "0.22.0", features = ["tokio-runtime"]}
 eyre = "0.6.8"
