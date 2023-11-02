@@ -2,9 +2,13 @@
 
 MollySocket allows getting signal notifications via [UnifiedPush](https://unifiedpush.org/). It works like a linked device, which doesn't have encryption key, connected to the Signal server. Everytime it receives an encrypted event, it notifies your mobile via UnifiedPush.
 
-## Status
+## Setup
 
-The associated pull request for Molly (android) can be found here: <https://github.com/mollyim/mollyim-android/pull/152>.
+1. You need the right flavor of Molly to support use UnifiedPush: <https://github.com/mollyim/mollyim-android-unifiedpush>.
+2. You can install MollySocket via:
+    1. Crates.io: `cargo install mollysocket`
+    2. Docker/Podman: `docker pull ghcr.io/mollyim/mollysocket:latest`
+    3. Direct downloand: <https://github.com/mollyim/mollysocket/releases>
 
 ## Configuration
 * MollySocket web server does not provide TLS. It should be accessible behind a reverse proxy. It is possible to use MollySocket without the web server: see the Air Gaped mode on Android settings.
