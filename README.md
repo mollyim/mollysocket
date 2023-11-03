@@ -8,7 +8,7 @@ MollySocket allows getting signal notifications via [UnifiedPush](https://unifie
 2. You can install MollySocket via:
     1. Crates.io: `cargo install mollysocket`
     2. Docker/Podman: `docker pull ghcr.io/mollyim/mollysocket:latest`
-    3. Direct downloand: <https://github.com/mollyim/mollysocket/releases>
+    3. Direct download: <https://github.com/mollyim/mollysocket/releases>
 
 ## Configuration
 * MollySocket web server does not provide TLS. It should be accessible behind a reverse proxy. It is possible to use MollySocket without the web server: see the Air Gaped mode on Android settings.
