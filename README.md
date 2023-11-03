@@ -4,7 +4,7 @@ MollySocket allows getting signal notifications via [UnifiedPush](https://unifie
 
 ## Setup
 
-1. You need the right flavor of Molly to support use UnifiedPush: <https://github.com/mollyim/mollyim-android-unifiedpush>.
+1. You need the right flavor of Molly to use UnifiedPush: <https://github.com/mollyim/mollyim-android-unifiedpush>.
 2. You can install MollySocket via:
     1. Crates.io: `cargo install mollysocket`
     2. Docker/Podman: `docker pull ghcr.io/mollyim/mollysocket:latest`
