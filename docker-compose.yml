@@ -2,7 +2,7 @@ version: "3"
 
 services:
   mollysocket:
-    image: ghcr.io/mollysocket/mollysocket:0
+    image: ghcr.io/mollyim/mollysocket:1
     container_name: mollysocket
     restart: always
     volumes:
