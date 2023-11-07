@@ -93,6 +93,7 @@ async fn register(co_data: Json<ConnectionData>) -> Json<Response> {
             // then the connection ends with a 403 Forbidden
             // If the connection is for an invalid uuid or an error occured : we ignore it
         }
+        RegistrationStatus::InvalidEndpoint | RegistrationStatus::InvalidUuid => (),
         _ => {
             log::debug!("Status unknown: {status:?}");
             status = RegistrationStatus::InternalError;
