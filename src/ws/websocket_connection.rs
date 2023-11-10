@@ -14,8 +14,8 @@ use tokio_tungstenite::{
     Connector::NativeTls,
 };
 
-use super::websocket_message::{
-    webSocketMessage::Type, WebSocketMessage, WebSocketRequestMessage, WebSocketResponseMessage,
+use super::proto_websocketresources::{
+    web_socket_message::Type, WebSocketMessage, WebSocketRequestMessage, WebSocketResponseMessage,
 };
 
 const KEEPALIVE: Duration = Duration::from_secs(30);
@@ -111,7 +111,7 @@ pub trait WebSocketConnection {
 
     async fn send_response(&self, response: WebSocketResponseMessage) {
         let message = WebSocketMessage {
-            r#type: Some(Type::RESPONSE as i32),
+            r#type: Some(Type::Response as i32),
             response: Some(response),
             request: None,
         };
@@ -121,7 +121,7 @@ pub trait WebSocketConnection {
     async fn send_keepalive(&self) {
         log::debug!("send_keepalive");
         let message = WebSocketMessage {
-            r#type: Some(Type::REQUEST as i32),
+            r#type: Some(Type::Request as i32),
             response: None,
             request: Some(WebSocketRequestMessage {
                 verb: Some(String::from("GET")),

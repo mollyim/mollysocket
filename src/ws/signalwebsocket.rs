@@ -8,11 +8,11 @@ use std::{
 use tokio::time;
 use tokio_tungstenite::tungstenite;
 
+use super::proto_websocketresources::{
+    web_socket_message::Type, WebSocketMessage, WebSocketRequestMessage, WebSocketResponseMessage,
+};
 use super::tls;
 use super::websocket_connection::WebSocketConnection;
-use super::websocket_message::{
-    webSocketMessage::Type, WebSocketMessage, WebSocketRequestMessage, WebSocketResponseMessage,
-};
 use crate::utils::post_allowed::post_allowed;
 
 const PUSH_TIMEOUT: Duration = Duration::from_secs(5);
@@ -67,8 +67,8 @@ impl WebSocketConnection for SignalWebSocket {
         if let Some(type_int) = message.r#type {
             if let Some(type_) = Type::from_i32(type_int) {
                 match type_ {
-                    Type::RESPONSE => self.on_response(message.response),
-                    Type::REQUEST => self.on_request(message.request).await,
+                    Type::Response => self.on_response(message.response),
+                    Type::Request => self.on_request(message.request).await,
                     _ => (),
                 };
             }
