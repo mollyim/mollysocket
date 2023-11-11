@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use eyre::Result;
 use futures_channel::mpsc;
 use prost::Message;
+use rocket::serde::json::serde_json::json;
 use std::{
     sync::{Arc, Mutex},
     time::{Duration, Instant},
@@ -231,7 +232,7 @@ impl SignalWebSocket {
         }
 
         let url = self.push_endpoint.clone();
-        let _ = post_allowed(url, &[("type", "message")]).await;
+        let _ = post_allowed(url, &json!({"urgent": true})).await;
         if let Some(tx) = &self.channels.on_push_tx {
             let _ = tx.unbounded_send(1);
         }
