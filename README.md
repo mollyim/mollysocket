@@ -11,7 +11,7 @@ MollySocket allows getting signal notifications via [UnifiedPush](https://unifie
     3. Direct download: <https://github.com/mollyim/mollysocket/releases>
 
 ## Configuration
-* MollySocket web server does not provide TLS. It should be accessible behind a reverse proxy. It is possible to use MollySocket without the web server: see the Air Gaped mode on Android settings.
+* MollySocket web server does not provide TLS. It should be accessible behind a reverse proxy. It is possible to use MollySocket without the web server: see the Air Gapped mode on Android settings.
 
 ### Environment
 * Use the environment variable `ROCKET_PORT` to change the port used by the webserver.
@@ -24,7 +24,7 @@ MollySocket allows getting signal notifications via [UnifiedPush](https://unifie
 * You can specify the db path in the `db` setting.
 
 ### Android
-* If MollySocket webserver is not accessible from the Internet, you can enable the **Air Gaped** mode. You will have to register your connection manually on MollySocket.
+* If MollySocket webserver is not accessible from the Internet, you can enable the **Air Gapped** mode. You will have to register your connection manually on MollySocket.
 * Every time MollySocket receives a(n encrypted) data : it notifies Molly via UnifiedPush if it hasn't notified the last 5 seconds. Then Molly open the websocket for 60secs.
 
 
