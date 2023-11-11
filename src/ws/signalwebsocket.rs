@@ -20,7 +20,7 @@ use super::{
 };
 use crate::utils::post_allowed::post_allowed;
 
-const PUSH_TIMEOUT: Duration = Duration::from_secs(5);
+const PUSH_TIMEOUT: Duration = Duration::from_secs(1);
 
 #[derive(Debug)]
 pub struct Channels {
