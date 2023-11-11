@@ -1,3 +1,4 @@
+mod proto_signalservice;
 mod proto_websocketresources;
 mod signalwebsocket;
 mod tls;

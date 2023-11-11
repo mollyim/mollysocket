@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use eyre::Result;
 use futures_channel::mpsc;
+use prost::Message;
 use std::{
     sync::{Arc, Mutex},
     time::{Duration, Instant},
@@ -8,11 +9,15 @@ use std::{
 use tokio::time;
 use tokio_tungstenite::tungstenite;
 
-use super::proto_websocketresources::{
-    web_socket_message::Type, WebSocketMessage, WebSocketRequestMessage, WebSocketResponseMessage,
-};
 use super::tls;
 use super::websocket_connection::WebSocketConnection;
+use super::{
+    proto_signalservice::Envelope,
+    proto_websocketresources::{
+        web_socket_message::Type, WebSocketMessage, WebSocketRequestMessage,
+        WebSocketResponseMessage,
+    },
+};
 use crate::utils::post_allowed::post_allowed;
 
 const PUSH_TIMEOUT: Duration = Duration::from_secs(5);
@@ -136,12 +141,14 @@ impl SignalWebSocket {
     async fn on_request(&self, request: Option<WebSocketRequestMessage>) {
         log::debug!("New request");
         if let Some(request) = request {
-            if self.read_or_empty(request).await {
+            if let Some(envelope) = self.request_to_envelope(request).await {
                 if let Some(tx) = &self.channels.on_message_tx {
                     let _ = tx.unbounded_send(1);
                 }
                 if self.waiting_timeout_reached() {
-                    self.send_push().await;
+                    if envelope.urgent() {
+                        self.send_push().await;
+                    }
                 } else {
                     log::debug!("The waiting timeout is not reached: the request is ignored.");
                 }
@@ -149,15 +156,31 @@ impl SignalWebSocket {
         }
     }
 
-    async fn read_or_empty(&self, request: WebSocketRequestMessage) -> bool {
+    async fn request_to_envelope(&self, request: WebSocketRequestMessage) -> Option<Envelope> {
         // dbg!(&request.path);
         let response = self.create_websocket_response(&request);
         // dbg!(&response);
         if self.is_signal_service_envelope(&request) {
             self.send_response(response).await;
-            return true;
+            return match request.body {
+                None => Some(Envelope {
+                    r#type: None,
+                    source_service_id: None,
+                    source_device: None,
+                    destination_service_id: None,
+                    timestamp: None,
+                    content: None,
+                    server_guid: None,
+                    server_timestamp: None,
+                    urgent: Some(false),
+                    updated_pni: None,
+                    story: None,
+                    reporting_token: None,
+                }),
+                Some(body) => Envelope::decode(&body[..]).ok(),
+            };
         }
-        false
+        None
     }
 
     fn is_signal_service_envelope(
