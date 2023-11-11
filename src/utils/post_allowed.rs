@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use eyre::{eyre, Result};
 use lazy_static::lazy_static;
 use reqwest::redirect::Policy;
+use serde::Serialize;
 use std::{
     error::Error as StdError,
     fmt::{Display, Formatter},
@@ -30,7 +31,7 @@ impl Display for Error {
 
 impl StdError for Error {}
 
-pub async fn post_allowed(url: Url, body: &[(&str, &str)]) -> Result<reqwest::Response> {
+pub async fn post_allowed<T: Serialize + ?Sized>(url: Url, body: &T) -> Result<reqwest::Response> {
     let port = match url.port() {
         Some(p) => p,
         None if url.scheme() == "http" => 80,
@@ -114,6 +115,8 @@ impl ResolveAllowed for LookupIp {
 
 #[cfg(test)]
 mod tests {
+    use rocket::serde::json::serde_json::json;
+
     use super::*;
     use std::str::FromStr;
 
@@ -130,7 +133,7 @@ mod tests {
     async fn test_post() {
         post_allowed(
             Url::from_str("https://httpbin.org/post").unwrap(),
-            &[("foo", "blah")],
+            &json!({"urgent": true}),
         )
         .await
         .unwrap();
