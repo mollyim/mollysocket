@@ -70,7 +70,7 @@ impl WebSocketConnection for SignalWebSocket {
 
     async fn on_message(&self, message: WebSocketMessage) {
         if let Some(type_int) = message.r#type {
-            if let Some(type_) = Type::from_i32(type_int) {
+            if let Ok(type_) = Type::try_from(type_int) {
                 match type_ {
                     Type::Response => self.on_response(message.response),
                     Type::Request => self.on_request(message.request).await,
