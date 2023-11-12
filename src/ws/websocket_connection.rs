@@ -39,6 +39,7 @@ pub trait WebSocketConnection {
         let (ws_stream, _) = tokio_tungstenite::connect_async_tls_with_config(
             request,
             None,
+            false,
             Some(NativeTls(tls_connector)),
         )
         .await?;
