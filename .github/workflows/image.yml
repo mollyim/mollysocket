@@ -6,13 +6,8 @@ on:
     # rebuild latest regulary - to resolve CVEs in base images
     - cron: "0 10 * * *"
   push:
-    branches:
-      - "**"
     tags:
-      - "\\d+\\.\\d+\\.\\d+"
-  pull_request:
-    branches:
-      - "main"
+      - "[0-9]+.[0-9]+.[0-9]+"
 
 jobs:
   build:
