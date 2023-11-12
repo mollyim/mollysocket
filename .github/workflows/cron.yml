@@ -1,20 +1,28 @@
-name: Build Container image
+name: Cron to rebuild latest
 
 on:
   workflow_dispatch:
   schedule:
     # rebuild latest regulary - to resolve CVEs in base images
     - cron: "0 10 * * *"
-  push:
-    tags:
-      - "[0-9]+.[0-9]+.[0-9]+"
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          fetch-tags: true
+          filter: blob:none
+          fetch-depth: 0
+
+      - name: Checkout last commit
+        id: checkout
+        run: |
+          LAST_TAG=$(git for-each-ref refs/tags --sort=-authordate --format='%(refname:short)' | grep '^[[:digit:]]*\.[[:digit:]]*\.[[:digit:]]$' | head -n1)
+          echo "LAST_TAG: $LAST_TAG"
+          echo "tag=$LAST_TAG" >> "$GITHUB_OUTPUT"
+          git checkout $LAST_TAG
 
       - name: Docker meta
         id: meta
@@ -27,9 +35,9 @@ jobs:
           tags: |
             type=schedule
             type=raw,value=latest,enable={{is_default_branch}}
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
+            type=semver,pattern={{version}},value=${{ steps.checkout.outputs.tag }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ steps.checkout.outputs.tag }}
+            type=semver,pattern={{major}},value=${{ steps.checkout.outputs.tag }}
     
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
