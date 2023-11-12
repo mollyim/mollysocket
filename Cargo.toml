@@ -38,3 +38,9 @@ eyre = "0.6.8"
 
 # [build-dependencies]
 # prost-build = { version = "0.12" }
+
+[profile.release]
+strip = true  # Automatically strip symbols from the binary.
+opt-level = "z"  # Optimize for size
+lto = true # Link time optimization
+codegen-units = 1 # Limit code generation units
