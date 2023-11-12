@@ -10,6 +10,12 @@ repository = "https://github.com/mollyim/mollysocket"
 keywords = ["unifiedpush", "molly", "signal"]
 # build = "src/build_proto.rs"
 
+[profile.release]
+strip = true  # Automatically strip symbols from the binary.
+opt-level = "s"  # Optimize for size
+lto = true # Link time optimization
+codegen-units = 1 # Limit code generation units
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
