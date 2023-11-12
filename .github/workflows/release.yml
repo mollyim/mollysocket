@@ -51,16 +51,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push
+      - name: Build
         id: build
         uses: docker/build-push-action@v5
         with:
-          push: ${{ github.event_name != 'pull_request' }}
+          context: .
+          push: false
           load: true
           file: Containerfile
           platforms: ${{ matrix.PLATFORM }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
       - name: Copy artifacts
         run: |
           mkdir -p artifacts
@@ -70,6 +72,11 @@ jobs:
             TAG=$GITHUB_SHA
           fi
           docker run --rm --entrypoint=cat ghcr.io/${{ github.repository }} /usr/local/bin/mollysocket > artifacts/mollysocket-${{ matrix.TARGET }}-$TAG
+
+      - name: Push
+        run: |
+          docker push --all-tags ghcr.io/${{ github.repository }}
+
       - name: Archive artifact
         uses: actions/upload-artifact@v2
         with:
