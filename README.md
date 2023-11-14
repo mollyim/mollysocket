@@ -2,13 +2,40 @@
 
 MollySocket allows getting signal notifications via [UnifiedPush](https://unifiedpush.org/). It works like a linked device, which doesn't have an encryption key, connected to the Signal server. Everytime it receives an encrypted event, it notifies your mobile via UnifiedPush.
 
+## Overview
+
+```mermaid
+---
+title: Message flow
+---
+graph TD
+    
+    MS[fa:fa-tablets MollySocket]
+    S[fa:fa-comment Signal Server]
+    P[fa:fa-server Push server]
+    subgraph "fa:fa-mobile Android"
+        D[fa:fa-tower-broadcast Distributor App]
+        MA[fa:fa-tablets Molly Android]
+    end
+    MS -- 1. Persistent connection --> S
+    MS -- 2. 'Notifications present' --> P
+    P -- 3. 'Notications present for Molly' --> D
+    D -- 4. 'Check Signal servers' --> MA
+    MA -- 5. 'Got messages?' --> S
+    S -- 6. Messages --> MA
+```
+
 ## Setup
 
 1. You need the right flavor of Molly to use UnifiedPush: <https://github.com/mollyim/mollyim-android-unifiedpush>.
-2. You can install MollySocket via:
+2. You can install MollySocket (see [INSTALL.md](INSTALL.md)) via:
     1. Crates.io: `cargo install mollysocket`
     2. Docker/Podman: `docker pull ghcr.io/mollyim/mollysocket:latest`
     3. Direct download: <https://github.com/mollyim/mollysocket/releases>
+3. A [distributor app](https://unifiedpush.org/users/distributors/) (easiest is [ntfy](https://f-droid.org/en/packages/io.heckel.ntfy/)
+
+You can optionally install your own push server like ntfy or NextPush.
+For beginners, you can use a free service like ntfy.sh (do consider donating if you have the means).
 
 ## Configuration
 
