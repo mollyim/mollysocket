@@ -1,6 +1,6 @@
 # MollySocket
 
-MollySocket allows getting signal notifications via [UnifiedPush](https://unifiedpush.org/). It works like a linked device, which doesn't have encryption key, connected to the Signal server. Everytime it receives an encrypted event, it notifies your mobile via UnifiedPush.
+MollySocket allows getting signal notifications via [UnifiedPush](https://unifiedpush.org/). It works like a linked device, which doesn't have an encryption key, connected to the Signal server. Everytime it receives an encrypted event, it notifies your mobile via UnifiedPush.
 
 ## Setup
 
@@ -11,17 +11,49 @@ MollySocket allows getting signal notifications via [UnifiedPush](https://unifie
     3. Direct download: <https://github.com/mollyim/mollysocket/releases>
 
 ## Configuration
-* MollySocket web server does not provide TLS. It should be accessible behind a reverse proxy. It is possible to use MollySocket without the web server: see the Air Gapped mode on Android settings.
 
-### Environment
-* Use the environment variable `ROCKET_PORT` to change the port used by the webserver.
-* Use the environment variable `MOLLY_CONF` to change the path to the configuration file.
-* Use the environment variable `RUST_LOG` to change the log level.
+MollySocket web server does not provide TLS. It should be accessible behind a reverse proxy.
+
+It is possible to use MollySocket without the web server: see the Air Gapped mode on Android settings.
+In this mode MollySocket doesn't 
+
+### Environment variables
+* `ROCKET_PORT` : port used by the webserver.
+* `MOLLY_CONF` : path to the configuration file.
+* `RUST_LOG` : log level.
 
 ### Configuration file
-* You can allow registration for all accounts by setting `allowed_uuids` to `['*']`. Else set your account ids in the array: `['account_id1','account_id2']`.
-* You can allow all endpoints by adding `*` to `allowed_endpoints` (for instance `['*']`). Else you can add the allowed endpoints in the array: `['https://dom1.tld','https//dom2.tld:4443]`. **Note that endpoints on your local network must be allowed explicitly**
-* You can specify the db path in the `db` setting.
+
+The configuration file uses the [TOML format](https://toml.io/). Below is an overview of configuration options.
+
+| Option            | Description                                       | Examples                                                | Default              |
+|-------------------|---------------------------------------------------|---------------------------------------------------------|----------------------|
+| allowed_endpoints | List of UnifiedPush servers                       | `["*"]`,`["https://yourdomain.tld", "https://ntfy.sh"]` | `["http://0.0.0.0"]` |
+| allowed_uuids     | UUIDs of signal accounts that may use this server | `["*"]`, `["abcdef-12345-tuxyz-67890"]`                 | `["*"]`              |
+| db                | Path to the DB                                    | `"/data/ms.sqlite"`                                     | `db.sqlite`          |
+
+#### `allowed_endpoints`
+
+These are the UnifiedPush endpoints that MollySocket may use to push notifications with. 
+
+**Note that endpoints on your local network must be allowed explicitly**
+
+As [per spec](https://unifiedpush.org/spec/server/), an endpoint is an [IRI](https://en.wikipedia.org/wiki/Internationalized_Resource_Identifier).
+Examples:
+ - `http://localhost`
+ - `https://mydomain.tld`
+ - `https://mydomain.tld:443`
+ - `https://ntfy.sh/mySecretSubscription`
+
+You can thus be very open and allow everything with `["*"]` or be increasingly specific even defining which subscription should be used.
+The subscription URI can be found in your distributor app.
+
+#### `allowed_uuids`
+
+You can allow registration for all accounts by setting `allowed_uuids` to `['*']`. Else set your account ids in the array: `['account_id1','account_id2']`.
+
+The account IDs are showing in the Molly application under Settings > Notifications > UnifiedPush.
+You may need to activate UnifiedPush first before your account ID is shown.
 
 ### Android
 * If MollySocket webserver is not accessible from the Internet, you can enable the **Air Gapped** mode. You will have to register your connection manually on MollySocket.
