@@ -1,5 +1,7 @@
 # Installation
 
+This file shows how to install and configure mollysocket on your system using a systemd service. If you are using the container, then only [App Configuration](#app-configuration) and [(Optional) More restrictive configuration](#optional-more-restrictive-configuration) will interest you.
+
 ## Install the binary with a dedicated user
 
 First of all, you need to install cargo on your system.
