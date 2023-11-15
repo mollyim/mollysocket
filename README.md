@@ -28,11 +28,11 @@ graph TD
 ## Setup
 
 1. You need the right flavor of Molly to use UnifiedPush: <https://github.com/mollyim/mollyim-android-unifiedpush>.
-2. You can install MollySocket (see [INSTALL.md](INSTALL.md)) via:
-    1. Crates.io: `cargo install mollysocket`
-    2. Docker/Podman: `docker pull ghcr.io/mollyim/mollysocket:latest`
-    3. Direct download: <https://github.com/mollyim/mollysocket/releases>
-3. A [distributor app](https://unifiedpush.org/users/distributors/) (easiest is [ntfy](https://f-droid.org/en/packages/io.heckel.ntfy/)
+2. You can install MollySocket via:
+    1. Docker/Podman: `docker pull ghcr.io/mollyim/mollysocket:latest`
+    2. Crates.io: `cargo install mollysocket` (see [INSTALL.md](INSTALL.md) for the setup) 
+    3. Direct download: <https://github.com/mollyim/mollysocket/releases> (see [INSTALL.md](INSTALL.md) for the setup)
+3. A [distributor app](https://unifiedpush.org/users/distributors/) (easiest is [ntfy](https://f-droid.org/en/packages/io.heckel.ntfy/))
 
 You can optionally install your own push server like ntfy or NextPush.
 For beginners, you can use a free service like ntfy.sh (do consider donating if you have the means).
@@ -63,7 +63,7 @@ The configuration file uses the [TOML format](https://toml.io/). Below is an ove
 
 These are the UnifiedPush endpoints that MollySocket may use to push notifications with. 
 
-**Note that endpoints on your local network must be allowed explicitly**
+**Note that, for security reasons, endpoints on your local network must be allowed explicitly**. If you self-host your push server, add it to the `allowed_endpoints`.
 
 As [per spec](https://unifiedpush.org/spec/server/), an endpoint is an [IRI](https://en.wikipedia.org/wiki/Internationalized_Resource_Identifier).
 Examples:
