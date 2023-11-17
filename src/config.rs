@@ -119,21 +119,21 @@ mod tests {
     async fn check_endpoint() {
         let cfg = test_config("*");
         assert!(
-            cfg.is_url_endpoint_valid(&url::Url::parse("http://0.0.0.0/foo?blah").unwrap())
+            cfg.is_url_endpoint_valid(&url::Url::parse("https://ntfy.sh/foo?blah").unwrap())
                 .await
         );
         assert!(
-            !cfg.is_url_endpoint_valid(&url::Url::parse("http://0.0.0.0:8080/foo?blah").unwrap())
+            !cfg.is_url_endpoint_valid(&url::Url::parse("https://ntfy.sh:8080/foo?blah").unwrap())
                 .await
         );
         assert!(
             !cfg.is_url_endpoint_valid(
-                &url::Url::parse("http://user:pass@0.0.0.0/foo?blah").unwrap()
+                &url::Url::parse("https://user:pass@ntfy.sh/foo?blah").unwrap()
             )
             .await
         );
         assert!(
-            !cfg.is_url_endpoint_valid(&url::Url::parse("https://0.0.0.0/foo?blah").unwrap())
+            !cfg.is_url_endpoint_valid(&url::Url::parse("http://ntfy.sh/foo?blah").unwrap())
                 .await
         );
     }
