@@ -19,7 +19,11 @@ impl Default for UserConfig {
     fn default() -> Self {
         Self {
             environment: Environment::Prod,
-            allowed_endpoints: vec![String::from("http://0.0.0.0/")],
+            allowed_endpoints: vec![
+                String::from("https://ntfy.sh/"),
+                String::from("https://up.conversations.im/"),
+                String::from("https://fcm.distributor.unifiedpush.org/"),
+            ],
             allowed_uuids: vec![String::from("*")],
             db: String::from("./mollysocket.db"),
         }

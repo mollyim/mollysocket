@@ -55,7 +55,7 @@ The configuration file uses the [TOML format](https://toml.io/). Below is an ove
 
 | Option            | Description                                       | Examples                                                | Default              |
 |-------------------|---------------------------------------------------|---------------------------------------------------------|----------------------|
-| allowed_endpoints | List of UnifiedPush servers                       | `["*"]`,`["https://yourdomain.tld", "https://ntfy.sh"]` | `["http://0.0.0.0"]` |
+| allowed_endpoints | List of UnifiedPush servers                       | `["*"]`,`["https://yourdomain.tld", "https://ntfy.sh"]` | `["https://ntfy.sh/", "https://up.conversations.im/", "https://fcm.distributor.unifiedpush.org/"]` |
 | allowed_uuids     | UUIDs of signal accounts that may use this server | `["*"]`, `["abcdef-12345-tuxyz-67890"]`                 | `["*"]`              |
 | db                | Path to the DB                                    | `"/data/ms.sqlite"`                                     | `db.sqlite`          |
 
