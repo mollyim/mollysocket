@@ -18,7 +18,7 @@ pub enum ConnectionCommand {
         /// Device token
         password: String,
 
-        /// Unified push endpoint
+        /// UnifiedPush endpoint
         endpoint: String,
     },
 
