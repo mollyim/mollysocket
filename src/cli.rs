@@ -1,37 +1,52 @@
-use std::env;
+use clap::{Parser, Subcommand};
+use std::path::PathBuf;
+
+use crate::cli::{connection::ConnectionCommand, test::TestCommand};
 
 mod connection;
-mod oneshot;
 mod server;
 mod test;
 
-fn usage() {
-    println!(
-        "
-Usage: {0} [command] [args, ...]
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+#[command(infer_subcommands = true)]
+struct Cli {
+    /// Sets a custom config file
+    #[arg(short, long, value_name = "FILE")]
+    config: Option<PathBuf>,
 
-Commands:
-  server        Run webserver and websockets
-  connection    List, add and remove connections
-  test          Test your endpoint/uuid
+    /// Turn debugging information on
+    #[arg(short, long, default_value_t = false)]
+    debug: bool,
 
-Run '{0} [command] --help' for more information on a command.
-",
-        env::args().nth(0).unwrap()
-    );
+    #[command(subcommand)]
+    command: Command,
+}
+
+#[derive(Subcommand)]
+enum Command {
+    /// Run webserver and websockets
+    Server {},
+
+    /// Add, remove and list connections
+    Connection {
+        #[command(subcommand)]
+        command: ConnectionCommand,
+    },
+
+    /// Test account and endpoint validity
+    Test {
+        #[command(subcommand)]
+        command: TestCommand,
+    },
 }
 
 pub async fn cli() {
-    let mut args = env::args();
-    args.next();
-    match args.next() {
-        Some(cmd) if cmd == "oneshot" || cmd == "o" => oneshot::oneshot(args).await,
-        Some(cmd) if cmd == "connection" || cmd == "c" => connection::connection(args).await,
-        Some(cmd) if cmd == "server" || cmd == "s" => server::server(args).await,
-        Some(cmd) if cmd == "test" || cmd == "t" => test::test(args).await,
-        Some(cmd) if cmd == "--version" => {
-            println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"))
-        }
-        _ => usage(),
+    let cli = Cli::parse();
+
+    match &cli.command {
+        Command::Server {} => server::server().await,
+        Command::Connection { command } => connection::connection(command).await,
+        Command::Test { command } => test::test(command).await,
     }
 }
