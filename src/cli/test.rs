@@ -6,7 +6,7 @@ use std::env;
 pub enum TestCommand {
     /// Test allowed UnifiedPush endpoint
     Endpoint {
-        /// Unified push endpoint
+        /// UnifiedPush endpoint
         endpoint: String,
     },
 
