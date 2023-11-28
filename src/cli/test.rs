@@ -4,7 +4,7 @@ use std::env;
 
 #[derive(Subcommand)]
 pub enum TestCommand {
-    /// Test allowed unified push endpoint
+    /// Test allowed UnifiedPush endpoint
     Endpoint {
         /// Unified push endpoint
         endpoint: String,
