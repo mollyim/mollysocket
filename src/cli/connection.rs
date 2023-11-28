@@ -34,21 +34,25 @@ pub enum ConnectionCommand {
 
 pub async fn connection(command: &ConnectionCommand) {
     match command {
-        ConnectionCommand::Add{account_id, device_id, password, endpoint} => add(account_id, device_id, password, endpoint).await,
-        ConnectionCommand::List{} => list(),
-        ConnectionCommand::Remove{account_id} => rm(account_id),
+        ConnectionCommand::Add {
+            account_id,
+            device_id,
+            password,
+            endpoint,
+        } => add(account_id, device_id, password, endpoint).await,
+        ConnectionCommand::List {} => list(),
+        ConnectionCommand::Remove { account_id } => rm(account_id),
     }
-
 }
 
 async fn add(uuid: &str, device_id: &u32, password: &str, endpoint: &str) {
     if !CONFIG.is_uuid_valid(uuid) {
         println!("UUID invalid or forbidden: {}", uuid);
-        return
+        return;
     }
     if !CONFIG.is_endpoint_valid(endpoint).await {
         println!("Endpoint invalid or forbidden: {}", endpoint);
-        return
+        return;
     }
     let _ = db::MollySocketDb::new().unwrap().add(&db::Connection {
         uuid: uuid.to_string(),

@@ -19,8 +19,8 @@ pub enum TestCommand {
 
 pub async fn test(command: &TestCommand) {
     match command {
-        TestCommand::Endpoint{endpoint} => test_endpoint(&endpoint).await,
-        TestCommand::Uuid{account_id} => test_uuid(&account_id),
+        TestCommand::Endpoint { endpoint } => test_endpoint(endpoint).await,
+        TestCommand::Uuid { account_id } => test_uuid(account_id),
     }
 }
 

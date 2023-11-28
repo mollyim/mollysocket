@@ -1,10 +1,7 @@
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
-use crate::cli::{
-    test::TestCommand,
-    connection::ConnectionCommand
-};
+use crate::cli::{connection::ConnectionCommand, test::TestCommand};
 
 mod connection;
 mod server;
@@ -29,7 +26,7 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {
     /// Run webserver and websockets
-    Server{},
+    Server {},
 
     /// Add, remove and list connections
     Connection {
@@ -48,8 +45,8 @@ pub async fn cli() {
     let cli = Cli::parse();
 
     match &cli.command {
-        Command::Server{} => server::server().await,
+        Command::Server {} => server::server().await,
         Command::Connection { command } => connection::connection(command).await,
-        Command::Test { command } => test::test(&command).await,
+        Command::Test { command } => test::test(command).await,
     }
 }
