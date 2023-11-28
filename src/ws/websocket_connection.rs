@@ -97,7 +97,7 @@ pub trait WebSocketConnection {
             Ok(msg) => msg,
             Err(e) => {
                 log::error!("Failed to decode protobuf: {}", e);
-                return ();
+                return ;
             }
         };
         self.on_message(ws_message).await;

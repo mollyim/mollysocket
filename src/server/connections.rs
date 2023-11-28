@@ -117,15 +117,14 @@ fn handle_connection_closed(res: Result<()>, co: &mut Connection) {
     match res {
         Ok(()) => (),
         Err(error) => {
-            if let Some(http_error) = error.downcast_ref::<tungstenite::Error>() {
-                if let tungstenite::Error::Http(resp) = http_error {
-                    let status = resp.status();
-                    log::info!("Connection for {} closed with status: {}", &co.uuid, status);
-                    if status == 403 {
-                        co.forbidden = true;
-                        let _ = DB.add(co);
-                        METRICS.forbiddens.inc()
-                    }
+            if let Some(tungstenite::Error::Http(resp)) = error.downcast_ref::<tungstenite::Error>()
+            {
+                let status = resp.status();
+                log::info!("Connection for {} closed with status: {}", &co.uuid, status);
+                if status == 403 {
+                    co.forbidden = true;
+                    let _ = DB.add(co);
+                    METRICS.forbiddens.inc()
                 }
             }
         }

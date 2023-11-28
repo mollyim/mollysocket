@@ -60,18 +60,18 @@ async fn register(co_data: Json<ConnectionData>) -> Json<Response> {
     let mut status = registration_status(&co_data).await;
     match status {
         RegistrationStatus::Updated | RegistrationStatus::New => {
-            if let Err(_) = new_connection(co_data) {
+            if new_connection(co_data).is_ok() {
+                log::debug!("Connection succeeded");
+            } else {
                 log::debug!("Could not start new connection");
                 status = RegistrationStatus::InternalError;
-            } else {
-                log::debug!("Connection succeeded");
             }
         }
         RegistrationStatus::Forbidden => {
             log::debug!("Connection is currently forbidden");
             if let Ok(co) = DB.get(&co_data.uuid) {
                 if co.device_id != co_data.device_id || co.password != co_data.password {
-                    if let Ok(_) = new_connection(co_data) {
+                    if new_connection(co_data).is_ok() {
                         log::debug!("Connection succeeded");
                         status = RegistrationStatus::Updated;
                         METRICS.forbiddens.dec();
@@ -144,14 +144,14 @@ async fn registration_status(co_data: &ConnectionData) -> RegistrationStatus {
     if co.device_id == co_data.device_id && co.password == co_data.password {
         // Credentials are not updated
         if co.forbidden {
-            return RegistrationStatus::Forbidden;
+            RegistrationStatus::Forbidden
         } else if co.endpoint != co_data.endpoint {
-            return RegistrationStatus::Updated;
+            RegistrationStatus::Updated
         } else {
-            return RegistrationStatus::Running;
+            RegistrationStatus::Running
         }
     } else {
-        return RegistrationStatus::Updated;
+        RegistrationStatus::Updated
     }
 }
 

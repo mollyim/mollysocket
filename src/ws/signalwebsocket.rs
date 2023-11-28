@@ -106,11 +106,10 @@ impl SignalWebSocket {
                 *keepalive = Instant::now();
             }
             if let Err(e) = self.connect(tls::build_tls_connector()?).await {
-                if let Some(http_error) = e.downcast_ref::<tungstenite::Error>() {
-                    if let tungstenite::Error::Http(resp) = http_error {
-                        if resp.status() == 403 {
-                            return Err(e);
-                        }
+                if let Some(tungstenite::Error::Http(resp)) = e.downcast_ref::<tungstenite::Error>()
+                {
+                    if resp.status() == 403 {
+                        return Err(e);
                     }
                 }
             }
@@ -130,7 +129,7 @@ impl SignalWebSocket {
 
     fn on_response(&self, response: Option<WebSocketResponseMessage>) {
         log::debug!("New response");
-        if let Some(_) = response {
+        if response.is_some() {
             let mut keepalive = self.last_keepalive.lock().unwrap();
             *keepalive = Instant::now();
         }

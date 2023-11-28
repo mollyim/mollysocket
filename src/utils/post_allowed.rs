@@ -52,7 +52,7 @@ pub async fn post_allowed<T: Serialize + ?Sized>(url: Url, body: &T) -> Result<r
         if resolved_socket_addrs.is_empty() {
             log::info!(
                 "Ignoring request to {}: no allowed ip",
-                url.host_str().unwrap_or(&"No host")
+                url.host_str().unwrap_or("No host")
             );
             return Err(eyre!(Error::HostNotAllowed));
         }
@@ -99,8 +99,8 @@ impl ResolveAllowed for Host<&str> {
                     .resolve_allowed()
                     .await
             }
-            Host::Ipv4(ip) if ip_rfc::global_v4(ip) => Ok(vec![IpAddr::V4(ip.clone())]),
-            Host::Ipv6(ip) if ip_rfc::global_v6(ip) => Ok(vec![IpAddr::V6(ip.clone())]),
+            Host::Ipv4(ip) if ip_rfc::global_v4(ip) => Ok(vec![IpAddr::V4(*ip)]),
+            Host::Ipv6(ip) if ip_rfc::global_v6(ip) => Ok(vec![IpAddr::V6(*ip)]),
             _ => Err(eyre!(Error::HostNotAllowed)),
         }
     }
@@ -109,7 +109,7 @@ impl ResolveAllowed for Host<&str> {
 #[async_trait]
 impl ResolveAllowed for LookupIp {
     async fn resolve_allowed(&self) -> Result<Vec<IpAddr>> {
-        Ok(self.iter().filter(|ip| ip_rfc::global(ip)).collect())
+        Ok(self.iter().filter(ip_rfc::global).collect())
     }
 }
 
