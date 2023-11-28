@@ -29,7 +29,7 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {
     /// Run webserver and websockets
-    Serve{},
+    Server{},
 
     /// Add, remove and list connections
     Connection {
@@ -56,7 +56,7 @@ pub async fn cli() {
     let cli = Cli::parse();
 
     match &cli.command {
-        Command::Serve{} => server::server().await,
+        Command::Server{} => server::server().await,
         Command::Connection { command } => connection::connection(command).await,
         Command::Test { command } => test::test(&command).await,
         Command::Oneshot { connect_addr, push_endpoint } => oneshot::oneshot(connect_addr, push_endpoint).await,
