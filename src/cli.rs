@@ -7,7 +7,6 @@ use crate::cli::{
 };
 
 mod connection;
-mod oneshot;
 mod server;
 mod test;
 
@@ -43,14 +42,6 @@ enum Command {
         #[command(subcommand)]
         command: TestCommand,
     },
-
-    /// Oneshot
-    Oneshot {
-        /// Signal websocket address
-        connect_addr: String,
-        /// Unified push endpoint
-        push_endpoint: String
-    },
 }
 
 pub async fn cli() {
@@ -60,6 +51,5 @@ pub async fn cli() {
         Command::Server{} => server::server().await,
         Command::Connection { command } => connection::connection(command).await,
         Command::Test { command } => test::test(&command).await,
-        Command::Oneshot { connect_addr, push_endpoint } => oneshot::oneshot(connect_addr, push_endpoint).await,
     }
 }
