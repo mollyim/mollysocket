@@ -1,39 +1,26 @@
 use crate::{db::MollySocketDb, CONFIG};
-use std::env::{self, Args};
+use clap::Subcommand;
+use std::env;
 
-fn usage() {
-    println!(
-        "
-Usage:
-{} test endpoint https://push.server.ltd/id
-{} test uuid aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
-",
-        env::args().nth(0).unwrap(),
-        env::args().nth(0).unwrap(),
-    );
+#[derive(Subcommand)]
+pub enum TestCommand {
+    /// Test allowed unified push endpoint
+    Endpoint {
+        /// Unified push endpoint
+        endpoint: String,
+    },
+
+    /// Test allowed account uuid
+    Uuid {
+        /// Account uuid
+        account_id: String,
+    },
 }
 
-pub async fn test(args: Args) {
-    let argv: Vec<String> = args.collect();
-    if argv.iter().any(|arg| arg == "--help" || arg == "-h") {
-        usage();
-        return;
-    }
-    let arg = match argv.get(1) {
-        Some(arg) => arg,
-        None => {
-            usage();
-            return;
-        }
-    }
-    .clone();
-    match argv.get(0) {
-        Some(cmd) if cmd == "endpoint" || cmd == "e" => test_endpoint(&arg).await,
-        Some(cmd) if cmd == "uuid" || cmd == "u" => test_uuid(&arg),
-        _ => {
-            usage();
-            return;
-        }
+pub async fn test(command: &TestCommand) {
+    match command {
+        TestCommand::Endpoint{endpoint} => test_endpoint(&endpoint).await,
+        TestCommand::Uuid{account_id} => test_uuid(&account_id),
     }
 }
 

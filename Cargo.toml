@@ -4,7 +4,7 @@ version = "1.1.1"
 edition = "2021"
 license = "AGPL-3.0-or-later"
 authors = ["S1m"]
-description = "MollySocket allows getting signal notifications via UnifiedPush. "
+description = "MollySocket allows getting signal notifications via UnifiedPush."
 readme = "README.md"
 repository = "https://github.com/mollyim/mollysocket"
 keywords = ["unifiedpush", "molly", "signal"]
@@ -41,6 +41,7 @@ rocket = { version = "0.5.0-rc.4", features = ["json"]}
 rocket_prometheus = "0.10.0-rc.3"
 trust-dns-resolver = { version = "0.23.2", features = ["tokio-runtime"]}
 eyre = "0.6.8"
+clap = {version = "4.4.10", features = ["derive"]}
 
 # [build-dependencies]
 # prost-build = { version = "0.12" }
