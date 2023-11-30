@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
 use crate::cli::{connection::ConnectionCommand, test::TestCommand};
+use crate::config;
 
 mod connection;
 mod server;
@@ -43,6 +44,8 @@ enum Command {
 
 pub async fn cli() {
     let cli = Cli::parse();
+
+    config::load_config(cli.config);
 
     match &cli.command {
         Command::Server {} => server::server().await,

@@ -1,6 +1,5 @@
-use crate::{db::MollySocketDb, CONFIG};
+use crate::{config, db::MollySocketDb, CONFIG};
 use clap::Subcommand;
-use std::env;
 
 #[derive(Subcommand)]
 pub enum TestCommand {
@@ -18,22 +17,15 @@ pub enum TestCommand {
 }
 
 pub async fn test(command: &TestCommand) {
+    config::print();
     match command {
         TestCommand::Endpoint { endpoint } => test_endpoint(endpoint).await,
         TestCommand::Uuid { account_id } => test_uuid(account_id),
     }
 }
 
-fn print_cfg() {
-    let file = match env::var_os("MOLLY_CONF") {
-        Some(path) => path.into_string().unwrap_or("Error".to_string()),
-        None => "Default".to_string(),
-    };
-    println!("Config file: {}", file);
-}
 fn test_uuid(uuid: &str) {
-    print_cfg();
-    if !CONFIG.is_uuid_valid(uuid) {
+    if !config::is_uuid_valid(uuid) {
         println!("UUID {} is not valid", uuid);
     } else {
         println!("UUID {} is valid", uuid);
@@ -61,25 +53,17 @@ fn test_uuid(uuid: &str) {
 }
 
 async fn test_endpoint(endpoint: &str) {
-    print_cfg();
-    if CONFIG.is_endpoint_valid(endpoint).await {
+    let cfg = CONFIG.get().unwrap();
+    if config::is_endpoint_valid(endpoint).await {
         println!("Endpoint {} is valid", endpoint);
     } else {
         println!("Endpoint {} is not valid", endpoint);
-        if CONFIG
-            .user_cfg
-            .allowed_endpoints
-            .contains(&String::from("*"))
-        {
+        if cfg.allowed_endpoints.contains(&String::from("*")) {
             println!("  The endpoint does not resolve to a global IP.")
         }
         println!("  Below the allowed endpoints:");
-        CONFIG
-            .user_cfg
-            .allowed_endpoints
-            .iter()
-            .for_each(|endpoint| {
-                println!("    '{}'", endpoint);
-            })
+        cfg.allowed_endpoints.iter().for_each(|endpoint| {
+            println!("    '{}'", endpoint);
+        })
     }
 }

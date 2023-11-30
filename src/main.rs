@@ -1,6 +1,4 @@
-use lazy_static::lazy_static;
-
-use config::Config;
+use std::sync::OnceLock;
 
 mod cli;
 mod config;
@@ -9,10 +7,7 @@ mod server;
 mod utils;
 mod ws;
 
-lazy_static! {
-    #[derive(Debug)]
-    static ref CONFIG: Config = Config::load(None);
-}
+static CONFIG: OnceLock<config::Config> = OnceLock::new();
 
 #[tokio::main]
 async fn main() {

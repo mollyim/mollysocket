@@ -45,7 +45,8 @@ It is possible to use MollySocket without the web server: see the Air Gapped mod
 In this mode MollySocket doesn't 
 
 ### Environment variables
-* `ROCKET_PORT` : port used by the webserver.
+* `MOLLY_PORT` : port used by the webserver (default 8020).
+* `MOLLY_HOST` : address used by the webserver (default 127.0.0.1).
 * `MOLLY_CONF` : path to the configuration file.
 * `RUST_LOG` : log level.
 
@@ -55,7 +56,7 @@ The configuration file uses the [TOML format](https://toml.io/). Below is an ove
 
 | Option            | Description                                       | Examples                                                | Default              |
 |-------------------|---------------------------------------------------|---------------------------------------------------------|----------------------|
-| allowed_endpoints | List of UnifiedPush servers                       | `["*"]`,`["https://yourdomain.tld", "https://ntfy.sh"]` | `["https://ntfy.sh/", "https://up.conversations.im/", "https://fcm.distributor.unifiedpush.org/"]` |
+| allowed_endpoints | List of UnifiedPush servers                       | `["*"]`,`["https://yourdomain.tld", "https://ntfy.sh"]` | `["*"]` |
 | allowed_uuids     | UUIDs of signal accounts that may use this server | `["*"]`, `["abcdef-12345-tuxyz-67890"]`                 | `["*"]`              |
 | db                | Path to the DB                                    | `"/data/ms.sqlite"`                                     | `db.sqlite`          |
 

@@ -1,8 +1,8 @@
 use crate::{
+    config,
     db::Connection,
     server::{DB, METRICS, REFS, TX},
     ws::SignalWebSocket,
-    CONFIG,
 };
 use eyre::Result;
 use futures_channel::mpsc::{self, UnboundedReceiver, UnboundedSender};
@@ -50,7 +50,7 @@ async fn connection_loop(co: &mut Connection) {
     }
     log::info!("Starting connection for {}", &co.uuid);
     let mut socket = match SignalWebSocket::new(
-        CONFIG.get_ws_endpoint(&co.uuid, co.device_id, &co.password),
+        config::get_ws_endpoint(&co.uuid, co.device_id, &co.password),
         co.endpoint.clone(),
     ) {
         Ok(s) => s,

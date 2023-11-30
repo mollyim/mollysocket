@@ -1,6 +1,6 @@
 use crate::{
+    config,
     db::{self, OptTime},
-    CONFIG,
 };
 use clap::Subcommand;
 
@@ -46,11 +46,11 @@ pub async fn connection(command: &ConnectionCommand) {
 }
 
 async fn add(uuid: &str, device_id: &u32, password: &str, endpoint: &str) {
-    if !CONFIG.is_uuid_valid(uuid) {
+    if !config::is_uuid_valid(uuid) {
         println!("UUID invalid or forbidden: {}", uuid);
         return;
     }
-    if !CONFIG.is_endpoint_valid(endpoint).await {
+    if !config::is_endpoint_valid(endpoint).await {
         println!("Endpoint invalid or forbidden: {}", endpoint);
         return;
     }

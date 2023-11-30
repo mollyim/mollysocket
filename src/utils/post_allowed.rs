@@ -11,7 +11,7 @@ use std::{
 use trust_dns_resolver::{lookup_ip::LookupIp, TokioAsyncResolver};
 use url::{Host, Url};
 
-use crate::CONFIG;
+use crate::config;
 
 lazy_static! {
     static ref RESOLVER: TokioAsyncResolver = TokioAsyncResolver::tokio_from_system_conf().unwrap();
@@ -39,7 +39,7 @@ pub async fn post_allowed<T: Serialize + ?Sized>(url: Url, body: &T) -> Result<r
         _ => return Err(eyre!(Error::SchemeNotAllowed)),
     };
 
-    let client = if CONFIG.is_endpoint_allowed_by_user(&url) {
+    let client = if config::is_endpoint_allowed_by_user(&url) {
         reqwest::ClientBuilder::new().redirect(Policy::none())
     } else {
         let resolved_socket_addrs = url
