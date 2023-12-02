@@ -56,8 +56,10 @@ pub fn load_config(cli_config_path: Option<PathBuf>) {
     figment = figment.merge(Serialized::defaults(Config::default()));
 
     if let Some(path) = get_config_path(cli_config_path) {
-        log::debug!("Config file: {}", path.display());
+        log::info!("Config file: {}", path.display());
         figment = figment.merge(Toml::file(path));
+    } else {
+        log::info!("No config file supplied");
     }
 
     figment = figment.merge(Env::prefixed("MOLLY_").ignore(&["conf"]));
