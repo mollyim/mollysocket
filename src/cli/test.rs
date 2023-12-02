@@ -1,4 +1,4 @@
-use crate::{config, db::MollySocketDb, CONFIG};
+use crate::{config, db::MollySocketDb};
 use clap::Subcommand;
 
 #[derive(Subcommand)]
@@ -53,7 +53,7 @@ fn test_uuid(uuid: &str) {
 }
 
 async fn test_endpoint(endpoint: &str) {
-    let cfg = CONFIG.get().unwrap();
+    let cfg = config::get_cfg();
     if config::is_endpoint_valid(endpoint).await {
         println!("Endpoint {} is valid", endpoint);
     } else {

@@ -1,7 +1,6 @@
 use crate::{
     config,
     db::{Connection, OptTime},
-    CONFIG,
 };
 use eyre::Result;
 use rocket::{
@@ -165,7 +164,7 @@ fn gen_rep(mut map: HashMap<String, String>) -> Json<Response> {
 }
 
 pub async fn launch() {
-    let app_cfg = CONFIG.get().unwrap();
+    let app_cfg = config::get_cfg();
     let rocket_cfg = rocket::Config::figment()
         .merge(("address", &app_cfg.host))
         .merge(("port", &app_cfg.port));

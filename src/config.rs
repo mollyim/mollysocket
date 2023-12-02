@@ -1,6 +1,4 @@
 use directories::ProjectDirs;
-use std::{default::Default, env, fmt::Debug};
-// use user_config::{Environment, UserConfig};
 use figment::{
     providers::{Env, Format, Serialized, Toml},
     Figment,
@@ -8,10 +6,11 @@ use figment::{
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::process;
+use std::{default::Default, env, fmt::Debug, sync::OnceLock};
 
 use crate::utils::post_allowed::ResolveAllowed;
 
-use crate::CONFIG;
+static CONFIG: OnceLock<Config> = OnceLock::new();
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum SignalEnvironment {
@@ -42,8 +41,12 @@ impl Default for Config {
     }
 }
 
+pub fn get_cfg() -> &'static Config {
+    CONFIG.get_or_init(|| Config::default())
+}
+
 pub fn print() {
-    let cfg = CONFIG.get().unwrap();
+    let cfg = get_cfg();
     println!("{:#?}", cfg);
 }
 
@@ -114,10 +117,8 @@ fn get_config_path(cli_config_path: Option<PathBuf>) -> Option<PathBuf> {
 
 // impl Config {
 pub fn is_uuid_valid(uuid: &str) -> bool {
-    let Some(cfg) = CONFIG.get() else {
-        return false;
-    };
-    cfg.allowed_uuids
+    get_cfg()
+        .allowed_uuids
         .iter()
         .any(|allowed| allowed == "*" || allowed == uuid)
 }
@@ -130,19 +131,13 @@ pub async fn is_endpoint_valid(url: &str) -> bool {
 }
 
 pub async fn is_url_endpoint_valid(url: &url::Url) -> bool {
-    let Some(cfg) = CONFIG.get() else {
-        return false;
-    };
     is_endpoint_allowed_by_user(url)
-        || (cfg.allowed_endpoints.contains(&String::from("*"))
+        || (get_cfg().allowed_endpoints.contains(&String::from("*"))
             && url.resolve_allowed().await.unwrap_or(vec![]).len().gt(&0))
 }
 
 pub fn is_endpoint_allowed_by_user(url: &url::Url) -> bool {
-    let Some(cfg) = CONFIG.get() else {
-        return false;
-    };
-    cfg.allowed_endpoints.iter().any(|allowed| {
+    get_cfg().allowed_endpoints.iter().any(|allowed| {
         if let Ok(allowed_url) = url::Url::parse(allowed) {
             return url.host() == allowed_url.host()
                 && url.port() == allowed_url.port()
@@ -155,13 +150,7 @@ pub fn is_endpoint_allowed_by_user(url: &url::Url) -> bool {
 }
 
 pub fn get_ws_endpoint(uuid: &str, devide_id: u32, password: &str) -> String {
-    let Some(cfg) = CONFIG.get() else {
-        return format!(
-            "wss://chat.signal.org/v1/websocket/?login={}.{}&password={}",
-            uuid, devide_id, password
-        );
-    };
-    match cfg.signal_env {
+    match get_cfg().signal_env {
         SignalEnvironment::Production => format!(
             "wss://chat.signal.org/v1/websocket/?login={}.{}&password={}",
             uuid, devide_id, password
@@ -209,23 +198,15 @@ mod tests {
     #[tokio::test]
     async fn check_endpoint() {
         test_config("*");
-        assert!(
-            is_url_endpoint_valid(&url::Url::parse("https://ntfy.sh/foo?blah").unwrap())
-                .await
-        );
+        assert!(is_url_endpoint_valid(&url::Url::parse("https://ntfy.sh/foo?blah").unwrap()).await);
         assert!(
             !is_url_endpoint_valid(&url::Url::parse("https://ntfy.sh:8080/foo?blah").unwrap())
                 .await
         );
         assert!(
-            !is_url_endpoint_valid(
-                &url::Url::parse("https://user:pass@ntfy.sh/foo?blah").unwrap()
-            )
-            .await
-        );
-        assert!(
-            !is_url_endpoint_valid(&url::Url::parse("http://ntfy.sh/foo?blah").unwrap())
+            !is_url_endpoint_valid(&url::Url::parse("https://user:pass@ntfy.sh/foo?blah").unwrap())
                 .await
         );
+        assert!(!is_url_endpoint_valid(&url::Url::parse("http://ntfy.sh/foo?blah").unwrap()).await);
     }
 }
