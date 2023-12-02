@@ -42,7 +42,7 @@ impl Default for Config {
 }
 
 pub fn get_cfg() -> &'static Config {
-    CONFIG.get_or_init(|| Config::default())
+    CONFIG.get().expect("Config is not initialized yet.")
 }
 
 pub fn print() {
