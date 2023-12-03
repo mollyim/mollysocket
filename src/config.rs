@@ -89,12 +89,21 @@ fn get_config_path(cli_config_path: Option<PathBuf>) -> Option<PathBuf> {
 
     // from cli argument
     if let Some(cli_path) = cli_config_path {
-        paths.push(cli_path)
+        if cli_path.exists() {
+            return Some(cli_path);
+        } else {
+            panic!("{} not found.", cli_path.display());
+        }
     }
 
     // from environment variable
     if let Some(env_path) = env::var_os("MOLLY_CONF") {
-        paths.push(env_path.into())
+        let path = Into::<PathBuf>::into(env_path);
+        if path.exists() {
+            return Some(path);
+        } else {
+            panic!("MOLLY_CONF={}, file not found.", path.display());
+        }
     }
 
     // from xdg_config_home
