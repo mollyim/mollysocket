@@ -20,7 +20,6 @@ codegen-units = 1 # Limit code generation units
 
 [dependencies]
 async-trait = "0.1.74"
-confy = "0.5.1"
 env_logger = "0.10.1"
 futures-channel = "0.3"
 futures-util = "0.3"
@@ -42,6 +41,8 @@ rocket_prometheus = "0.10.0"
 trust-dns-resolver = { version = "0.23.2", features = ["tokio-runtime"]}
 eyre = "0.6.8"
 clap = {version = "4.4.10", features = ["derive"]}
+figment = { version = "0.10.12", features = ["toml", "env"] }
+directories = "5.0.1"
 
 # [build-dependencies]
 # prost-build = { version = "0.12" }

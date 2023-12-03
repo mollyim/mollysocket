@@ -11,7 +11,7 @@ use std::{
 use trust_dns_resolver::{lookup_ip::LookupIp, TokioAsyncResolver};
 use url::{Host, Url};
 
-use crate::CONFIG;
+use crate::config;
 
 lazy_static! {
     static ref RESOLVER: TokioAsyncResolver = TokioAsyncResolver::tokio_from_system_conf().unwrap();
@@ -39,7 +39,7 @@ pub async fn post_allowed<T: Serialize + ?Sized>(url: Url, body: &T) -> Result<r
         _ => return Err(eyre!(Error::SchemeNotAllowed)),
     };
 
-    let client = if CONFIG.is_endpoint_allowed_by_user(&url) {
+    let client = if config::is_endpoint_allowed_by_user(&url) {
         reqwest::ClientBuilder::new().redirect(Policy::none())
     } else {
         let resolved_socket_addrs = url
@@ -131,6 +131,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_post() {
+        config::load_config(None);
         post_allowed(
             Url::from_str("https://httpbin.org/post").unwrap(),
             &json!({"urgent": true}),
@@ -141,6 +142,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_not_allowed() {
+        config::load_config(None);
         assert_eq!(len_from_str("unix://signal.org").await, 0);
         assert_eq!(len_from_str("http://127.1").await, 0);
         assert_eq!(len_from_str("http://localhost").await, 0);
@@ -151,6 +153,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_allowed() {
+        config::load_config(None);
         assert!(len_from_str("http://signal.org").await.gt(&0));
         assert!(len_from_str("http://signal.org:8080").await.gt(&0));
         assert!(len_from_str("https://signal.org").await.gt(&0));

@@ -1,13 +1,13 @@
 use crate::{
+    config,
     db::{Connection, OptTime},
-    CONFIG,
 };
 use eyre::Result;
 use rocket::{
     get, post, routes,
     serde::{json::Json, Deserialize, Serialize},
 };
-use std::{collections::HashMap, time::SystemTime};
+use std::{collections::HashMap, env, time::SystemTime};
 
 use super::{metrics::MountMetrics, DB, METRICS, TX};
 
@@ -123,8 +123,8 @@ fn new_connection(co_data: Json<ConnectionData>) -> Result<()> {
 }
 
 async fn registration_status(co_data: &ConnectionData) -> RegistrationStatus {
-    let endpoint_valid = CONFIG.is_endpoint_valid(&co_data.endpoint).await;
-    let uuid_valid = CONFIG.is_uuid_valid(&co_data.uuid);
+    let endpoint_valid = config::is_endpoint_valid(&co_data.endpoint).await;
+    let uuid_valid = config::is_uuid_valid(&co_data.uuid);
 
     if !uuid_valid {
         return RegistrationStatus::InvalidUuid;
@@ -156,12 +156,20 @@ async fn registration_status(co_data: &ConnectionData) -> RegistrationStatus {
 }
 
 fn gen_rep(mut map: HashMap<String, String>) -> Json<Response> {
-    map.insert(String::from("version"), CONFIG.version.clone());
+    map.insert(
+        String::from("version"),
+        env!("CARGO_PKG_VERSION").to_string(),
+    );
     Json(Response { mollysocket: map })
 }
 
 pub async fn launch() {
+    let rocket_cfg = rocket::Config::figment()
+        .merge(("address", &config::get_host()))
+        .merge(("port", &config::get_port()));
+
     let _ = rocket::build()
+        .configure(rocket_cfg)
         .mount("/", routes![discover, register])
         .mount_metrics("/metrics", &METRICS)
         .launch()

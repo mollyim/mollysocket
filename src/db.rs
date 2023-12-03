@@ -5,7 +5,7 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use crate::CONFIG;
+use crate::config;
 
 mod migrations;
 
@@ -70,7 +70,7 @@ impl Connection {
 
 impl MollySocketDb {
     pub fn new() -> Result<MollySocketDb> {
-        let db = rusqlite::Connection::open(CONFIG.user_cfg.db.clone())?;
+        let db = rusqlite::Connection::open(config::get_db())?;
         db.execute_batch(
             "
 CREATE TABLE IF NOT EXISTS connections(
@@ -131,6 +131,7 @@ mod tests {
 
     #[test]
     fn test_db() {
+        config::load_config(None);
         let db = MollySocketDb::new().unwrap();
         let uuid = "0d2ff653-3d88-43de-bcdb-f6657d3484e4";
         db.add(&Connection {

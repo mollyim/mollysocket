@@ -1,7 +1,8 @@
 use clap::{Parser, Subcommand};
-use std::path::PathBuf;
+use std::{env, path::PathBuf};
 
 use crate::cli::{connection::ConnectionCommand, test::TestCommand};
+use crate::config;
 
 mod connection;
 mod server;
@@ -43,6 +44,22 @@ enum Command {
 
 pub async fn cli() {
     let cli = Cli::parse();
+
+    if cli.debug {
+        env::set_var("RUST_LOG", "debug")
+    }
+
+    match &cli.command {
+        Command::Server {} => (),
+        _ => {
+            if env::var("RUST_LOG").is_err() {
+                env::set_var("RUST_LOG", "info");
+            }
+        }
+    }
+    env_logger::init();
+
+    config::load_config(cli.config);
 
     match &cli.command {
         Command::Server {} => server::server().await,
