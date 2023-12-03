@@ -7,6 +7,5 @@ mod ws;
 
 #[tokio::main]
 async fn main() {
-    env_logger::init();
     cli::cli().await;
 }
