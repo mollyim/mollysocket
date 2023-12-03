@@ -7,6 +7,7 @@ services:
     restart: always
     volumes:
       - ./data:/data
+    working_dir: /data
     command: server
     environment:
       - MOLLY_CONF=/data/ms.toml
