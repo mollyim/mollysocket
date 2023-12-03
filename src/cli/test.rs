@@ -53,17 +53,9 @@ fn test_uuid(uuid: &str) {
 }
 
 async fn test_endpoint(endpoint: &str) {
-    let cfg = config::get_cfg();
     if config::is_endpoint_valid(endpoint).await {
         println!("Endpoint {} is valid", endpoint);
     } else {
         println!("Endpoint {} is not valid", endpoint);
-        if cfg.allowed_endpoints.contains(&String::from("*")) {
-            println!("  The endpoint does not resolve to a global IP.")
-        }
-        println!("  Below the allowed endpoints:");
-        cfg.allowed_endpoints.iter().for_each(|endpoint| {
-            println!("    '{}'", endpoint);
-        })
     }
 }

@@ -164,10 +164,9 @@ fn gen_rep(mut map: HashMap<String, String>) -> Json<Response> {
 }
 
 pub async fn launch() {
-    let app_cfg = config::get_cfg();
     let rocket_cfg = rocket::Config::figment()
-        .merge(("address", &app_cfg.host))
-        .merge(("port", &app_cfg.port));
+        .merge(("address", &config::get_host()))
+        .merge(("port", &config::get_port()));
 
     let _ = rocket::build()
         .configure(rocket_cfg)

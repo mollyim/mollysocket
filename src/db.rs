@@ -70,8 +70,7 @@ impl Connection {
 
 impl MollySocketDb {
     pub fn new() -> Result<MollySocketDb> {
-        let cfg = config::get_cfg();
-        let db = rusqlite::Connection::open(cfg.db.clone())?;
+        let db = rusqlite::Connection::open(config::get_db())?;
         db.execute_batch(
             "
 CREATE TABLE IF NOT EXISTS connections(
@@ -132,6 +131,7 @@ mod tests {
 
     #[test]
     fn test_db() {
+        config::load_config(None);
         let db = MollySocketDb::new().unwrap();
         let uuid = "0d2ff653-3d88-43de-bcdb-f6657d3484e4";
         db.add(&Connection {

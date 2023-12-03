@@ -131,6 +131,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_post() {
+        config::load_config(None);
         post_allowed(
             Url::from_str("https://httpbin.org/post").unwrap(),
             &json!({"urgent": true}),
@@ -141,6 +142,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_not_allowed() {
+        config::load_config(None);
         assert_eq!(len_from_str("unix://signal.org").await, 0);
         assert_eq!(len_from_str("http://127.1").await, 0);
         assert_eq!(len_from_str("http://localhost").await, 0);
@@ -151,6 +153,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_allowed() {
+        config::load_config(None);
         assert!(len_from_str("http://signal.org").await.gt(&0));
         assert!(len_from_str("http://signal.org:8080").await.gt(&0));
         assert!(len_from_str("https://signal.org").await.gt(&0));
