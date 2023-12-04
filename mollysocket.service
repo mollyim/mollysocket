@@ -14,6 +14,7 @@ Group=mollysocket
 UMask=0007
 
 ExecStart=/opt/mollysocket/ms server
+KillSignal=SIGINT
 
 Restart=on-failure
 
