@@ -10,9 +10,11 @@ services:
     working_dir: /data
     command: server
     environment:
-      - MOLLY_CONF=/data/ms.toml
-      - ROCKET_PORT=8020
-      - ROCKET_ADDRESS=0.0.0.0
+      - MOLLY_DB="/data/mollysocket.db"
+      # Do not add space in the array ["http://a.tld","*"]
+      - MOLLY_ALLOWED_ENDPOINTS=["*"]
+      - MOLLY_ALLOWED_UUIDS=["*"]
+      - MOLLY_PORT=8020
       - RUST_LOG=info
     ports:
       - "8020:8020"
