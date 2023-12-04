@@ -31,16 +31,16 @@ log = "0.4.20"
 native-tls = "0.2.11"
 prost = "0.12"
 reqwest = { version = "0.11.22", features = ["json"]}
-serde = { version = "1.0.192", features = ["derive"]}
+serde = { version = "1.0.193", features = ["derive"]}
 tokio-tungstenite = { version = "0.20.1", features = ["native-tls"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
-url = "2.4.1"
+url = "2.5.0"
 rusqlite = "0.30.0"
 rocket = { version = "0.5.0", features = ["json"]}
 rocket_prometheus = "0.10.0"
 trust-dns-resolver = { version = "0.23.2", features = ["tokio-runtime"]}
-eyre = "0.6.8"
-clap = {version = "4.4.10", features = ["derive"]}
+eyre = "0.6.9"
+clap = {version = "4.4.11", features = ["derive"]}
 figment = { version = "0.10.12", features = ["toml", "env"] }
 directories = "5.0.1"
 
