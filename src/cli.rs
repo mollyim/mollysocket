@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand};
+use clap::{ArgAction, Parser, Subcommand};
 use std::{env, path::PathBuf};
 
 use crate::cli::{connection::ConnectionCommand, test::TestCommand};
@@ -16,9 +16,9 @@ struct Cli {
     #[arg(short, long, value_name = "FILE")]
     config: Option<PathBuf>,
 
-    /// Turn debugging information on
-    #[arg(short, long, default_value_t = false)]
-    debug: bool,
+    /// Verbosity level
+    #[arg(short, action = ArgAction::Count)]
+    verbose: u8,
 
     #[command(subcommand)]
     command: Command,
@@ -45,8 +45,17 @@ enum Command {
 pub async fn cli() {
     let cli = Cli::parse();
 
-    if cli.debug {
-        env::set_var("RUST_LOG", "debug")
+    match cli.verbose {
+        0 => (),
+        1 => match env::var("RUST_LOG") {
+            Ok(v) if (v.as_str() == "trace" || v.as_str() == "debug") => (),
+            _ => env::set_var("RUST_LOG", "info"),
+        },
+        2 => match env::var("RUST_LOG") {
+            Ok(v) if (v.as_str() == "trace") => (),
+            _ => env::set_var("RUST_LOG", "debug"),
+        },
+        _ => env::set_var("RUST_LOG", "trace"),
     }
 
     match &cli.command {
@@ -58,6 +67,8 @@ pub async fn cli() {
         }
     }
     env_logger::init();
+
+    log::debug!("env_logger initialized");
 
     config::load_config(cli.config);
 
