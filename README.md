@@ -41,8 +41,7 @@ For beginners, you can use a free service like ntfy.sh (do consider donating if 
 
 MollySocket web server does not provide TLS. It should be accessible behind a reverse proxy.
 
-It is possible to use MollySocket without the web server: see the Air Gapped mode on Android settings.
-In this mode MollySocket doesn't 
+It is possible to use MollySocket without the web server: see the **Air Gapped** mode on Android settings. You will need to register your connection to MollySocket manually.
 
 ### Environment variables
 * `MOLLY_PORT` : port used by the webserver (default 8020).
