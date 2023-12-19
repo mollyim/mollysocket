@@ -37,55 +37,42 @@ graph TD
 You can optionally install your own push server like ntfy or NextPush.
 For beginners, you can use a free service like ntfy.sh (do consider donating if you have the means).
 
+## Web Server
+
+MollySocket exposes a web server so that Molly can send the information it needs to operate. You should configure TLS with a reverse proxy in front of MollySocket.
+
+It is possible to use MollySocket without the web server, but you will have to manually register the information MollySocket needs: see the **Air Gapped** mode on Android settings.
+
 ## Configuration
 
-MollySocket web server does not provide TLS. It should be accessible behind a reverse proxy.
+The configuration file uses the [TOML format](https://toml.io/). Below is an overview of configuration options. You can configure each parameter using either the conf file, the environment variable or the cli option (if available).
 
-It is possible to use MollySocket without the web server: see the **Air Gapped** mode on Android settings. You will need to register your connection to MollySocket manually.
+| Parameter (conf. file) | Environment variable       | Cli Option  | Description                                       | Default              | Examples                                                |
+|------------------------|----------------------------|-------------|---------------------------------------------------|----------------------|---------------------------------------------------------|
+|                        | RUST_LOG                \* | -v/-vv/-vvv | Verbosity                                         | error                | RUST_LOG=info, RUST_LOG=debug                           |
+|                        | MOLLY_CONF                 | -c \*       | Path to the configuration file, optional          |                      | /etc/mollysocket.conf                                   |
+| host                   | MOLLY_HOST              \* |             | Listening address of the web server               | 127.0.0.1            | 0.0.0.0                                                 |
+| port                   | MOLLY_PORT              \* |             | Listening port of the web server                  | 8020                 | 8080                                                    |
+| allowed_endpoints      | MOLLY_ALLOWED_ENDPOINTS \* |             | List of UnifiedPush servers                       | `["*"]`              | `["*"]`,`["https://yourdomain.tld","https://ntfy.sh"]`  |
+| allowed_uuids          | MOLLY_ALLOWED_UUIDS     \* |             | UUIDs of signal accounts that may use this server | `["*"]`              | `["*"]`, `["abcdef-12345-tuxyz-67890"]`                 |
+| db                     | MOLLY_DB                \* |             | Path to the DB                                    | `db.sqlite`          | `"/data/ms.sqlite"`                                     |
 
-### Environment variables
-* `MOLLY_PORT` : port used by the webserver (default 8020).
-* `MOLLY_HOST` : address used by the webserver (default 127.0.0.1).
-* `MOLLY_CONF` : path to the configuration file.
-* `RUST_LOG` : log level.
-
-### Configuration file
-
-The configuration file uses the [TOML format](https://toml.io/). Below is an overview of configuration options.
-
-| Option            | Description                                       | Examples                                                | Default              |
-|-------------------|---------------------------------------------------|---------------------------------------------------------|----------------------|
-| allowed_endpoints | List of UnifiedPush servers                       | `["*"]`,`["https://yourdomain.tld", "https://ntfy.sh"]` | `["*"]` |
-| allowed_uuids     | UUIDs of signal accounts that may use this server | `["*"]`, `["abcdef-12345-tuxyz-67890"]`                 | `["*"]`              |
-| db                | Path to the DB                                    | `"/data/ms.sqlite"`                                     | `db.sqlite`          |
+\* Takes the precedence
 
 #### `allowed_endpoints`
 
 These are the UnifiedPush endpoints that MollySocket may use to push notifications with. 
 
-**Note that, for security reasons, endpoints on your local network must be allowed explicitly**. If you self-host your push server, add it to the `allowed_endpoints`.
+⚠️ **If you self-host your push server, add your push server to the `allowed_endpoints`.** ⚠️
 
-As [per spec](https://unifiedpush.org/spec/server/), an endpoint is an [IRI](https://en.wikipedia.org/wiki/Internationalized_Resource_Identifier).
-Examples:
- - `http://localhost`
- - `https://mydomain.tld`
- - `https://mydomain.tld:443`
- - `https://ntfy.sh/mySecretSubscription`
-
-You can thus be very open and allow everything with `["*"]` or be increasingly specific even defining which subscription should be used.
-The subscription URI can be found in your distributor app.
+That's because, for security reasons, endpoints on your local network must be allowed explicitly. You just have to set the scheme (https), the domain and the port if required. For instance `allowed_endpoints=['https://push.mydomain.tld']`
 
 #### `allowed_uuids`
 
 You can allow registration for all accounts by setting `allowed_uuids` to `['*']`. Else set your account ids in the array: `['account_id1','account_id2']`.
 
 The account IDs are showing in the Molly application under Settings > Notifications > UnifiedPush.
-You may need to activate UnifiedPush first before your account ID is shown.
-
-### Android
-* If MollySocket webserver is not accessible from the Internet, you can enable the **Air Gapped** mode. You will have to register your connection manually on MollySocket.
-* Every time MollySocket receives a(n encrypted) data : it notifies Molly via UnifiedPush if it hasn't notified the last 5 seconds. Then Molly open the websocket for 60secs.
-
+You need to activate UnifiedPush first before your account ID is shown.
 
 ## About security
 
