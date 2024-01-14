@@ -74,6 +74,28 @@ You can allow registration for all accounts by setting `allowed_uuids` to `['*']
 The account IDs are showing in the Molly application under Settings > Notifications > UnifiedPush.
 You need to activate UnifiedPush first before your account ID is shown.
 
+## Troubleshoot
+
+* **On the Android app, the status states _MollySocket server not found_**
+
+You haven't entered the right url.
+
+This must be the one where MollySocket is reachable. To test it, open the link you have entered in a browser: you should see a json containing the version of MollySocket. For instance `{"mollysocket":{"version":"1.2.0"}}`.
+
+* **On the Android app, the status states _The account ID is refused by the server_**
+
+You have restricted the allowed account ID who can use your MollySocket server.
+
+Add your account ID[1] to _allowed_uuids_ to allow your account, or add a wildcard `["*"]` to allow all the accounts to use your server. See [Configuration](#configuration) to configure your server correctly.
+
+[1] Your account ID can be copied on the Android app, under the UnifiedPush settings
+
+* **On the Android app, the status states _The endpoint is forbidden by the server_**
+
+You have restricted the allowed UnifiedPush endpoints, or you are using a self-hosted server you haven't whitelisted.
+
+Add your server to the _allowed_endpoints_: `["https://push.mydomain.tld"]`. _This is NOT your MollySocket URL_ but the one from your push provider. See [Configuration](#configuration) to configure your server correctly.
+
 ## About security
 
 **Relative to Signal security**
