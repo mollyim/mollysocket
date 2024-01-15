@@ -100,6 +100,8 @@ Add your server to the _allowed_endpoints_: `["https://push.mydomain.tld"]`. _Th
 
 **Relative to Signal security**
 
+**MollySocket never has any encryption key**
+
 MollySocket receives the credentials for a linked device and does not receive any encryption key. Which means:
 * Someone with access to MollySocket database can't change the identity key, to impersonate users. See [setKeys](https://github.com/signalapp/Signal-Server/blob/v8.67.0/service/src/main/java/org/whispersystems/textsecuregcm/controllers/KeysController.java#L111).
 * Someone with access to MollySocket database may be able to use the credentials of linked devices to spam the Signal server and hit the rate limits. I haven't checked if this would temporarily block the account or just the linked device. (Availability risk)
