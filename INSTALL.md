@@ -1,10 +1,14 @@
 # Installation
 
-This file shows how to install and configure mollysocket on your system using a systemd service. If you are using the container, then only [App Configuration](#app-configuration) and [(Optional) More restrictive configuration](#optional-more-restrictive-configuration) will interest you.
+This file shows how to install and configure mollysocket **on your system using a systemd service**.
+
+**This should be relevant if you use docker**
 
 ## Install the binary with a dedicated user
 
-First of all, you need to install cargo on your system.
+First of all, you need to install mollysocket on your system.
+
+#### Create a dedicated account
 
 The service will run with a dedicated account, so create it and switch to that user:
 
@@ -14,21 +18,25 @@ sudo -su mollysocket
 cd
 ```
 
-Install mollysocket using cargo: `cargo install mollysocket`.
+#### Install the binary
 
-Link the executable for ease of use `ln -s /opt/mollysocket/.cargo/bin/mollysocket /opt/mollysocket/ms`.
+You have 2 solutions to install the binary.
 
-Run `MOLLY_CONF=/opt/mollysocket/prod.toml /opt/mollysocket/ms c l` once to create the config file and remove `mollysocket.db`, it will be recreated later. This is to ensure it will have the correct permissions with the service.
+1. Use an already compiled binary: <https://github.com/mollyim/mollysocket/releases/>. To follow the systemd service, and for ease of use, link the executable (replace with the right version of the binary): `ln -s /opt/mollysocket/mollysocket-amd64-1.2.0 /opt/mollysocket/ms`
+
+2. Use cargo. This method allows you to use cargo to maintain mollysocket up to date. First of all, you need to [install cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html) (you need at least version 1.59). Then, install mollysocket using cargo: `cargo install mollysocket`. *You probably need to install some system packages, like libssl-dev libsqlite3-dev*. To follow the systemd service, and for ease of use, link the executable: `ln -s /opt/mollysocket/.cargo/bin/mollysocket /opt/mollysocket/ms`.
+
+#### Prepare the config file
+
+Download a sample of the config file: `wget -O /opt/mollysocket/prod.toml https://github.com/mollyim/mollysocket/raw/main/config-sample.toml`.
+
+#### Done
 
 Switch back to your usual account: `exit`.
 
 ## App configuration
 
-In `/opt/mollysocket/prod.toml`, replace the `allowed_endpoints` with `allowed_endpoints = ['*']`. You will be able to set something more restrictive after your phone registration.
-
-*If you host your own Push server*, then explicitly add it to the allowed endpoints `allowed_endpoints = ['*', 'https://push.mydomain.tld']` (remove `'*'` if you will use your push server only).
-
-Change the path for the `db = '/opt/mollysocket/mollysocket.db'`.
+*If you host your own Push server*, then explicitly add it to the allowed endpoints. In `/opt/mollysocket/prod.toml`, edit `allowed_endpoints = ['*', 'https://push.mydomain.tld']` (remove `'*'` if you will use your push server only).
 
 ## Install systemd service
 

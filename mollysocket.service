@@ -5,7 +5,6 @@ After=network-online.target
 [Service]
 Type=simple
 Environment="RUST_LOG=info"
-Environment="ROCKET_PORT=8020"
 Environment="MOLLY_CONF=/opt/mollysocket/prod.toml"
 WorkingDirectory=/opt/mollysocket/
 
