@@ -96,6 +96,10 @@ You have restricted the allowed UnifiedPush endpoints, or you are using a self-h
 
 Add your server to the _allowed_endpoints_: `["https://push.mydomain.tld"]`. _This is NOT your MollySocket URL_ but the one from your push provider. See [Configuration](#configuration) to configure your server correctly.
 
+* **I use the Air-gapped mode and I don't receive notifications**.
+
+If you use air-gapped mode, then Molly (android) can't test the setup and it assumes you have correctly setup everything. You should double check that the account ID is accepted by your mollysocket server and the endpoint is allowed by your mollysocket server (check the output logs).
+
 ## About security
 
 **Relative to Signal security**
