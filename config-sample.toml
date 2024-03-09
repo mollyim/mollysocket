@@ -1,4 +1,5 @@
 db = '/opt/mollysocket/mollysocket.db'
 allowed_endpoints = ['*']
 allowed_uuids = ['*']
+webserver = true
 port = 8020

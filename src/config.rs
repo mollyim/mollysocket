@@ -20,6 +20,7 @@ pub enum SignalEnvironment {
 struct Config {
     host: String,
     port: u16,
+    webserver: bool,
     signal_env: SignalEnvironment,
     allowed_endpoints: Vec<String>,
     allowed_uuids: Vec<String>,
@@ -38,6 +39,7 @@ impl Default for Config {
         Self {
             host: String::from("127.0.0.1"),
             port: 8020,
+            webserver: true,
             signal_env: SignalEnvironment::Production,
             allowed_endpoints: vec![String::from("*")],
             allowed_uuids: vec![String::from("*")],
@@ -64,6 +66,10 @@ pub fn get_port() -> u16 {
 
 pub fn is_uuid_valid(uuid: &str) -> bool {
     get_cfg().is_uuid_valid(uuid)
+}
+
+pub fn should_start_webserver() -> bool {
+    get_cfg().webserver
 }
 
 pub fn get_ws_endpoint(uuid: &str, devide_id: u32, password: &str) -> String {
