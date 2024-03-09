@@ -164,6 +164,11 @@ fn gen_rep(mut map: HashMap<String, String>) -> Json<Response> {
 }
 
 pub async fn launch() {
+    if !config::should_start_webserver() {
+        log::warn!("The web server is disabled, making mollysocket run in an air gapped mode. With this clients are less easy to set up and push might break.");
+        return;
+    }
+
     let rocket_cfg = rocket::Config::figment()
         .merge(("address", &config::get_host()))
         .merge(("port", &config::get_port()));
