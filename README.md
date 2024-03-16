@@ -39,7 +39,7 @@ For beginners, you can use a free service like ntfy.sh (do consider donating if 
 
 ## Web Server
 
-MollySocket exposes a web server so that Molly can send the information it needs to operate. You should configure TLS with a reverse proxy in front of MollySocket.
+MollySocket exposes a web server so that Molly can send the information it needs to operate. You must configure TLS with a reverse proxy in front of MollySocket. Molly can only connect to the server over HTTPS.
 
 It is possible to use MollySocket without the web server, but you will have to manually register the information MollySocket needs: see the **Air Gapped** mode on Android settings.
 
@@ -82,6 +82,8 @@ You need to activate UnifiedPush first before your account ID is shown.
 You haven't entered the right url.
 
 This must be the one where MollySocket is reachable. To test it, open the link you have entered in a browser: you should see a json containing the version of MollySocket. For instance `{"mollysocket":{"version":"1.2.0"}}`.
+
+If you can access the web server, make sure it is accessible over HTTPS. Molly can't connect to the server over HTTP.
 
 * **On the Android app, the status states _The account ID is refused by the server_**
 
