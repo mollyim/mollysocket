@@ -1,8 +1,11 @@
 use crate::{
     config,
     db::{self, OptTime},
+    utils::anonymize_url,
 };
 use clap::Subcommand;
+use lazy_static::lazy_static;
+use regex::Regex;
 
 #[derive(Subcommand)]
 pub enum ConnectionCommand {
@@ -23,7 +26,11 @@ pub enum ConnectionCommand {
     },
 
     /// List all account connections
-    List {},
+    List {
+        /// Anonymize account id and password
+        #[arg(short, long)]
+        anonymized: bool,
+    },
 
     /// Remove account connection
     Remove {
@@ -40,7 +47,7 @@ pub async fn connection(command: &ConnectionCommand) {
             password,
             endpoint,
         } => add(account_id, device_id, password, endpoint).await,
-        ConnectionCommand::List {} => list(),
+        ConnectionCommand::List { anonymized } => list(*anonymized),
         ConnectionCommand::Remove { account_id } => rm(account_id),
     }
 }
@@ -65,13 +72,27 @@ async fn add(uuid: &str, device_id: &u32, password: &str, endpoint: &str) {
     println!("Connection for {} added.", uuid);
 }
 
-fn list() {
+fn list(anonymized: bool) {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"[^-]").unwrap();
+    }
+    if anonymized {
+        println!("
+/!\\ The endpoints are not fully anonymized. /!\\
+This is required to help to debug some setups. You should unregister Molly from your distributor to get a new endpoint if you share this output.
+");
+    }
     db::MollySocketDb::new()
         .unwrap()
         .list()
         .unwrap()
-        .iter()
+        .iter_mut()
         .for_each(|connection| {
+            if anonymized {
+                connection.uuid = RE.replace_all(&connection.uuid, "x").into();
+                connection.password = RE.replace_all(&connection.password, "x").into();
+                connection.endpoint = anonymize_url(&connection.endpoint);
+            }
             dbg!(&connection);
         });
 }

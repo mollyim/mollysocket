@@ -43,6 +43,7 @@ eyre = "0.6.9"
 clap = {version = "4.4.11", features = ["derive"]}
 figment = { version = "0.10.12", features = ["toml", "env"] }
 directories = "5.0.1"
+regex = "1.10.3"
 
 # [build-dependencies]
 # prost-build = { version = "0.12" }
