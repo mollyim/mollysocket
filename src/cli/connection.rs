@@ -1,11 +1,12 @@
 use crate::{
     config,
     db::{self, OptTime},
-    utils::anonymize_url,
+    utils::{anonymize_url, post_allowed::post_allowed},
 };
 use clap::Subcommand;
 use lazy_static::lazy_static;
 use regex::Regex;
+use rocket::serde::json::json;
 
 #[derive(Subcommand)]
 pub enum ConnectionCommand {
@@ -37,6 +38,12 @@ pub enum ConnectionCommand {
         /// Account UUID
         account_id: String,
     },
+
+    /// Send test notification to the endpoint associated
+    Ping {
+        /// Account UUID
+        account_id: String,
+    },
 }
 
 pub async fn connection(command: &ConnectionCommand) {
@@ -49,6 +56,7 @@ pub async fn connection(command: &ConnectionCommand) {
         } => add(account_id, device_id, password, endpoint).await,
         ConnectionCommand::List { anonymized } => list(*anonymized),
         ConnectionCommand::Remove { account_id } => rm(account_id),
+        ConnectionCommand::Ping { account_id } => ping(account_id).await,
     }
 }
 
@@ -100,4 +108,17 @@ This is required to help to debug some setups. You should unregister Molly from 
 fn rm(uuid: &str) {
     db::MollySocketDb::new().unwrap().rm(uuid).unwrap();
     println!("Connection for {} successfully removed.", uuid)
+}
+
+async fn ping(uuid: &str) {
+    let connection = match db::MollySocketDb::new().unwrap().get(uuid) {
+        Ok(c) => c,
+        Err(_) => {
+            println!("No connection found with this Id");
+            return;
+        }
+    };
+    let url = url::Url::parse(&connection.endpoint).unwrap();
+    // We unwrap to catch some config errors
+    post_allowed(url, &json!({"test":true})).await.unwrap();
 }
