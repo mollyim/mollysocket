@@ -19,31 +19,31 @@ codegen-units = 1 # Limit code generation units
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-async-trait = "0.1.74"
-env_logger = "0.10.1"
+async-trait = "0.1.78"
+env_logger = "0.11.3"
 futures-channel = "0.3"
 futures-util = "0.3"
-http = "0.2.10"
+http = "1.1.0"
 # until https://github.com/rust-lang/rust/issues/27709 is merged
 ip_rfc = "0.1.0"
 lazy_static = "1.4.0"
-log = "0.4.20"
+log = "0.4.21"
 native-tls = "0.2.11"
 prost = "0.12"
-reqwest = { version = "0.11.22", features = ["json"]}
-serde = { version = "1.0.193", features = ["derive"]}
-tokio-tungstenite = { version = "0.20.1", features = ["native-tls"] }
+reqwest = { version = "0.12.1", features = ["json"]}
+serde = { version = "1.0.197", features = ["derive"]}
+tokio-tungstenite = { version = "0.21.0", features = ["native-tls"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 url = "2.5.0"
-rusqlite = "0.30.0"
+rusqlite = "0.31.0"
 rocket = { version = "0.5.0", features = ["json"]}
 rocket_prometheus = "0.10.0"
 trust-dns-resolver = { version = "0.23.2", features = ["tokio-runtime"]}
-eyre = "0.6.9"
-clap = {version = "4.4.11", features = ["derive"]}
-figment = { version = "0.10.12", features = ["toml", "env"] }
+eyre = "0.6.12"
+clap = {version = "4.5.3", features = ["derive"]}
+figment = { version = "0.10.15", features = ["toml", "env"] }
 directories = "5.0.1"
-regex = "1.10.3"
+regex = "1.10.4"
 
 # [build-dependencies]
 # prost-build = { version = "0.12" }
