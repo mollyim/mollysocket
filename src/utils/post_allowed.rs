@@ -1,12 +1,16 @@
 use async_trait::async_trait;
 use eyre::{eyre, Result};
 use lazy_static::lazy_static;
-use reqwest::redirect::Policy;
+use reqwest::dns::Addrs;
+use reqwest::{dns::Resolve, redirect::Policy};
 use serde::Serialize;
+use std::net;
 use std::{
     error::Error as StdError,
     fmt::{Display, Formatter},
-    net::{IpAddr, SocketAddr},
+    iter,
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    sync::Arc,
 };
 use trust_dns_resolver::{lookup_ip::LookupIp, TokioAsyncResolver};
 use url::{Host, Url};
@@ -30,6 +34,18 @@ impl Display for Error {
 }
 
 impl StdError for Error {}
+
+struct ResolveNothing;
+
+impl Resolve for ResolveNothing {
+    fn resolve(&self, _: reqwest::dns::Name) -> reqwest::dns::Resolving {
+        let addrs = Box::new(iter::once(net::SocketAddr::new(
+            IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)),
+            0,
+        ))) as Addrs;
+        Box::pin(futures_util::future::ready(Ok(addrs)))
+    }
+}
 
 pub async fn post_allowed<T: Serialize + ?Sized>(url: Url, body: &T) -> Result<reqwest::Response> {
     let port = match url.port() {
@@ -59,7 +75,7 @@ pub async fn post_allowed<T: Serialize + ?Sized>(url: Url, body: &T) -> Result<r
 
         reqwest::ClientBuilder::new()
             .redirect(Policy::none())
-            .no_trust_dns()
+            .dns_resolver(Arc::new(ResolveNothing))
             .resolve_to_addrs(url.host_str().unwrap(), &resolved_socket_addrs)
     }
     .build()
