@@ -103,6 +103,20 @@ Add your server to the _allowed_endpoints_: `["https://push.mydomain.tld"]`. _Th
 
 If you use air-gapped mode, then Molly (android) can't test the setup and it assumes you have correctly setup everything. You should double check that the account ID is accepted by your mollysocket server and the endpoint is allowed by your mollysocket server (check the output logs).
 
+* **The status is "OK" or "OK: Air Gapped" but I still don't get notifications**
+
+If you are using Molly version >= 7.1.3-1.up1 and MollySocket version >= 1.3.0, you can run this command:
+
+```console
+$ mollysocket connection ping c8d44128-5c99-4810-a7d3-71c079891c27 # Replace this UUID with your account Id
+```
+
+If you receive a test notification (image bellow), then you should check that Molly and your [distributor](https://unifiedpush.org/users/distributors/) have unrestricted battery usage. You should check if you have additional configuration for your device regarding battery management: <https://dontkillmyapp.com/>.
+
+<img src="https://github.com/mollyim/mollysocket/assets/31284753/b8def045-d80a-4165-a7a6-2aa721044c2e" width="400rem">
+
+If you don't receive a test notification, then your MollySocket server can't reach your push server or your phone don't have network access.
+
 ## About security
 
 **Relative to Signal security**
