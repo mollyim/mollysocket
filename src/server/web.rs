@@ -1,13 +1,15 @@
 use crate::{
     config,
     db::{Connection, OptTime},
+    utils::ping,
 };
 use eyre::Result;
 use rocket::{
     get, post, routes,
     serde::{json::Json, Deserialize, Serialize},
 };
-use std::{collections::HashMap, env, time::SystemTime};
+use std::{collections::HashMap, env, str::FromStr, time::SystemTime};
+use url::Url;
 
 use super::{metrics::MountMetrics, DB, METRICS, TX};
 
@@ -59,8 +61,22 @@ fn discover() -> Json<Response> {
 async fn register(co_data: Json<ConnectionData>) -> Json<Response> {
     let mut status = registration_status(&co_data).await;
     match status {
-        RegistrationStatus::Updated | RegistrationStatus::New => {
-            if new_connection(co_data).is_ok() {
+        RegistrationStatus::New => {
+            if new_connection(&co_data).is_ok() {
+                log::debug!("Connection succeeded");
+                if let Err(e) = ping(Url::from_str(&co_data.endpoint).unwrap()).await {
+                    log::warn!(
+                        "Cound not ping the new connection (uuid={}): {e:?}",
+                        &co_data.uuid
+                    );
+                }
+            } else {
+                log::debug!("Could not start new connection");
+                status = RegistrationStatus::InternalError;
+            }
+        }
+        RegistrationStatus::Updated => {
+            if new_connection(&co_data).is_ok() {
                 log::debug!("Connection succeeded");
             } else {
                 log::debug!("Could not start new connection");
@@ -71,7 +87,7 @@ async fn register(co_data: Json<ConnectionData>) -> Json<Response> {
             log::debug!("Connection is currently forbidden");
             if let Ok(co) = DB.get(&co_data.uuid) {
                 if co.device_id != co_data.device_id || co.password != co_data.password {
-                    if new_connection(co_data).is_ok() {
+                    if new_connection(&co_data).is_ok() {
                         log::debug!("Connection succeeded");
                         status = RegistrationStatus::Updated;
                         METRICS.forbiddens.dec();
@@ -106,7 +122,7 @@ async fn register(co_data: Json<ConnectionData>) -> Json<Response> {
     )]))
 }
 
-fn new_connection(co_data: Json<ConnectionData>) -> Result<()> {
+fn new_connection(co_data: &Json<ConnectionData>) -> Result<()> {
     let co = Connection {
         uuid: co_data.uuid.clone(),
         device_id: co_data.device_id,

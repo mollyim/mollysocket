@@ -1,12 +1,14 @@
+use std::str::FromStr;
+
 use crate::{
     config,
     db::{self, OptTime},
-    utils::{anonymize_url, post_allowed::post_allowed},
+    utils::{self, anonymize_url},
 };
 use clap::Subcommand;
 use lazy_static::lazy_static;
 use regex::Regex;
-use rocket::serde::json::json;
+use url::Url;
 
 #[derive(Subcommand)]
 pub enum ConnectionCommand {
@@ -77,6 +79,9 @@ async fn add(uuid: &str, device_id: &u32, password: &str, endpoint: &str) {
         forbidden: false,
         last_registration: OptTime(None),
     });
+    if let Err(e) = utils::ping(Url::from_str(endpoint).unwrap()).await {
+        log::warn!("Cound not ping the new connection (uuid={}): {e:?}", uuid);
+    }
     println!("Connection for {} added.", uuid);
 }
 
@@ -120,5 +125,5 @@ async fn ping(uuid: &str) {
     };
     let url = url::Url::parse(&connection.endpoint).unwrap();
     // We unwrap to catch some config errors
-    post_allowed(url, &json!({"test":true})).await.unwrap();
+    utils::ping(url).await.unwrap();
 }
