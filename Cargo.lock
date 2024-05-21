@@ -1149,7 +1149,7 @@ dependencies = [
 
 [[package]]
 name = "mollysocket"
-version = "1.4.0-dev"
+version = "1.4.0"
 dependencies = [
  "async-trait",
  "clap",
