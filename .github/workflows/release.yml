@@ -8,19 +8,13 @@ on:
 
 jobs:
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - TARGET: amd64
-            PLATFORM: linux/amd64
-          - TARGET: arm64
-            PLATFORM: linux/arm64/v8
-          - TARGET: armv7
-            PLATFORM: linux/arm/v7
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-tags: true
+          filter: blob:none
+          fetch-depth: 0
 
       - name: Docker meta
         id: meta
@@ -33,15 +27,21 @@ jobs:
           tags: |
             type=schedule
             type=raw,value=latest,enable={{is_default_branch}}
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
+            type=semver,pattern={{version}},value=${{ steps.checkout.outputs.tag }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ steps.checkout.outputs.tag }}
+            type=semver,pattern={{major}},value=${{ steps.checkout.outputs.tag }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Set Up containerd image store
+        shell: bash
+        run: |
+          cat /etc/docker/daemon.json | jq '. | .+{"features": {"containerd-snapshotter": true}}' | sudo tee /etc/docker/daemon.json
+          sudo systemctl restart docker
 
       - name: Login to GitHub Container Registry
         if: github.event_name != 'pull_request'
@@ -51,31 +51,34 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build
+      - name: Prepare artifacts
+        run: |
+          mkdir -p artifacts
+          mkdir -p out
+
+      - name: Build and publish
         id: build
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: false
-          load: true
+          push: true
           file: Containerfile
-          platforms: ${{ matrix.PLATFORM }}
+          platforms: linux/amd64,linux/arm64/v8,linux/arm/v7
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          outputs: |
+            type=local,dest=out
+            type=docker
 
       - name: Copy artifacts
         run: |
-          mkdir -p artifacts
-          if [[ $GITHUB_REF_TYPE =~ ^tag$ ]]; then
-            TAG=$GITHUB_REF_NAME
-          else
-            TAG=$GITHUB_SHA
-          fi
-          docker run --rm --entrypoint=cat ghcr.io/${{ github.repository }} /usr/local/bin/mollysocket > artifacts/mollysocket-${{ matrix.TARGET }}-$TAG
-
-      - name: Push
-        run: |
-          docker push --all-tags ghcr.io/${{ github.repository }}
+          for k in $(ls out/); do
+            ARCH=$(basename $k)
+            echo $ARCH
+            if [ -f out/$k/usr/local/bin/mollysocket ]; then
+              cp out/$k/usr/local/bin/mollysocket artifacts/mollysocket-$ARCH
+            fi
+          done
 
       - name: Archive artifact
         uses: actions/upload-artifact@v2
