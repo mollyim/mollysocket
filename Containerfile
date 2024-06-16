@@ -2,7 +2,7 @@ FROM docker.io/rust:alpine as builder
 WORKDIR app
 
 COPY . .
-RUN apk add --no-cache musl-dev openssl-dev openssl-libs-static sqlite-dev sqlite-static crypto++-dev
+RUN apk add --no-cache musl-dev openssl-dev openssl-libs-static sqlite-dev sqlite-static
 RUN cargo build --release --bin mollysocket
 
 
