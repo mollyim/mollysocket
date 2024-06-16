@@ -1,19 +1,18 @@
-FROM docker.io/rust:bookworm as builder
+FROM docker.io/rust:alpine as builder
 WORKDIR app
-    
+
 COPY . .
+RUN apk add --no-cache musl-dev openssl-dev openssl-libs-static sqlite-dev sqlite-static crypto++-dev
 RUN cargo build --release --bin mollysocket
 
 
-FROM docker.io/debian:bookworm-slim as runtime
+FROM alpine:3 as runtime
 WORKDIR app
 
 ENV MOLLY_HOST=127.0.0.1
 ENV MOLLY_PORT=8020
 
-RUN apt update && \
-    apt install -y wget libssl3 libsqlite3-0 ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache ca-certificates 
 
 COPY --from=builder /app/target/release/mollysocket /usr/local/bin/
 HEALTHCHECK --interval=1m --timeout=3s \
