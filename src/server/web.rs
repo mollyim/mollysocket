@@ -29,7 +29,8 @@ struct ConnectionData {
 #[derive(Debug)]
 enum RegistrationStatus {
     New,
-    Updated,
+    CredsUpdated,
+    EndpointUpdated,
     Running,
     Forbidden,
     InvalidUuid,
@@ -37,12 +38,14 @@ enum RegistrationStatus {
     InternalError,
 }
 
+// This is used to send the reponse to Molly
 impl From<RegistrationStatus> for String {
     fn from(r: RegistrationStatus) -> Self {
         match r {
-            RegistrationStatus::New | RegistrationStatus::Updated | RegistrationStatus::Running => {
-                "ok"
-            }
+            RegistrationStatus::New
+            | RegistrationStatus::CredsUpdated
+            | RegistrationStatus::EndpointUpdated
+            | RegistrationStatus::Running => "ok",
             RegistrationStatus::Forbidden => "forbidden",
             RegistrationStatus::InvalidUuid => "invalid_uuid",
             RegistrationStatus::InvalidEndpoint => "invalid_endpoint",
@@ -61,7 +64,7 @@ fn discover() -> Json<Response> {
 async fn register(co_data: Json<ConnectionData>) -> Json<Response> {
     let mut status = registration_status(&co_data).await;
     match status {
-        RegistrationStatus::New => {
+        RegistrationStatus::New | RegistrationStatus::CredsUpdated => {
             if new_connection(&co_data).is_ok() {
                 log::debug!("Connection succeeded");
                 if let Err(e) = ping(Url::from_str(&co_data.endpoint).unwrap()).await {
@@ -75,7 +78,7 @@ async fn register(co_data: Json<ConnectionData>) -> Json<Response> {
                 status = RegistrationStatus::InternalError;
             }
         }
-        RegistrationStatus::Updated => {
+        RegistrationStatus::EndpointUpdated => {
             if new_connection(&co_data).is_ok() {
                 log::debug!("Connection succeeded");
             } else {
@@ -89,7 +92,7 @@ async fn register(co_data: Json<ConnectionData>) -> Json<Response> {
                 if co.device_id != co_data.device_id || co.password != co_data.password {
                     if new_connection(&co_data).is_ok() {
                         log::debug!("Connection succeeded");
-                        status = RegistrationStatus::Updated;
+                        status = RegistrationStatus::CredsUpdated;
                         METRICS.forbiddens.dec();
                     } else {
                         log::debug!("Could not start new connection");
@@ -162,12 +165,12 @@ async fn registration_status(co_data: &ConnectionData) -> RegistrationStatus {
         if co.forbidden {
             RegistrationStatus::Forbidden
         } else if co.endpoint != co_data.endpoint {
-            RegistrationStatus::Updated
+            RegistrationStatus::EndpointUpdated
         } else {
             RegistrationStatus::Running
         }
     } else {
-        RegistrationStatus::Updated
+        RegistrationStatus::CredsUpdated
     }
 }
 
