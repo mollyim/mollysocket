@@ -99,6 +99,43 @@ You have restricted the allowed UnifiedPush endpoints, or you are using a self-h
 
 Add your server to the _allowed_endpoints_: `["https://push.mydomain.tld"]`. _This is NOT your MollySocket URL_ but the one from your push provider. See [Configuration](#configuration) to configure your server correctly.
 
+* **On the Android app, the status is _Air gapped, waiting for test notification_**
+
+There might be 3 reasons for that:
+- You don't have yet registered your connection on a MollySocket server.
+    - It is better to use MollySocket configured with a web interface, see [Web Server](#web-server) for more information.
+    - If you can't have a web interface, you can use it in air gapped mode. The MollySocket server should be constantly running. You can use the docker-compose or follow the [Install doc](/Install.md).
+    - Then, if you stick with air gapped mode, you will need to add your account to the MollySocket registration. You can copy the parameter on the Android settings view. Then run:
+```console
+$ # If you use docker-compose:
+$ docker compose run mollysocket <paste the parameters here>
+$ # Else, if you use the binary:
+$ mollysocket <paste the parameters here>
+```
+- It is possible you don't use a recent enough version of MollySocket and it hasn't send a request during the registration. You can run :
+```console
+$ # Replace the UUID with your account Id
+$ # If you use docker-compose:
+$ docker compose run mollysocket connection ping c8d44128-5c99-4810-a7d3-71c079891c27
+$ # Else, if you use the binary:
+$ mollysocket connection ping c8d44128-5c99-4810-a7d3-71c079891c27
+```
+- You have a problem with your UnifiedPush setup. You can get further troubleshooting information on this page: <https://unifiedpush.org/users/troubleshooting/>.
+
+* **On the Android app, the status is _Waiting for test notification_**
+
+- It is possible you don't use a recent enough version of MollySocket and it hasn't send a request during the registration. You can either:
+    - Update your MollySocket server, then on Molly Android go to the linked devices settings, remove MollySocket, then go to the notifications settings, switch the delivery method to websocket then to UnifiedPush again.
+    - Run :
+```console
+$ # Replace the UUID with your account Id
+$ # If you use docker-compose:
+$ docker compose run mollysocket connection ping c8d44128-5c99-4810-a7d3-71c079891c27
+$ # Else, if you use the binary:
+$ mollysocket connection ping c8d44128-5c99-4810-a7d3-71c079891c27
+```
+- You have a problem with your UnifiedPush setup. You can get further troubleshooting information on this page: <https://unifiedpush.org/users/troubleshooting/>.
+
 * **I use the Air-gapped mode and I don't receive notifications**.
 
 If you use air-gapped mode, then Molly (android) can't test the setup and it assumes you have correctly setup everything. You should double check that the account ID is accepted by your mollysocket server and the endpoint is allowed by your mollysocket server (check the output logs).
@@ -108,7 +145,11 @@ If you use air-gapped mode, then Molly (android) can't test the setup and it ass
 If you are using Molly version >= 7.1.3-1.up1 and MollySocket version >= 1.3.0, you can run this command:
 
 ```console
-$ mollysocket connection ping c8d44128-5c99-4810-a7d3-71c079891c27 # Replace this UUID with your account Id
+$ # Replace the UUID with your account Id
+$ # If you use docker-compose:
+$ docker compose run mollysocket connection ping c8d44128-5c99-4810-a7d3-71c079891c27
+$ # Else, if you use the binary:
+$ mollysocket connection ping c8d44128-5c99-4810-a7d3-71c079891c27
 ```
 
 If you receive a test notification (image bellow), then you should check that Molly and your [distributor](https://unifiedpush.org/users/distributors/) have unrestricted battery usage. You should check if you have additional configuration for your device regarding battery management: <https://dontkillmyapp.com/>.
@@ -116,6 +157,8 @@ If you receive a test notification (image bellow), then you should check that Mo
 <img src="https://github.com/mollyim/mollysocket/assets/31284753/b8def045-d80a-4165-a7a6-2aa721044c2e" width="400rem">
 
 If you don't receive a test notification, then your MollySocket server can't reach your push server or your phone don't have network access.
+
+You can get further troubleshooting information on this page: <https://unifiedpush.org/users/troubleshooting/>.
 
 ## About security
 
