@@ -23,6 +23,19 @@ pub struct Connection {
     pub last_registration: OptTime,
 }
 
+impl Connection {
+    pub fn new(uuid: String, device_id: u32, password: String, endpoint: String) -> Self {
+        Connection {
+            uuid,
+            device_id,
+            password,
+            endpoint,
+            forbidden: false,
+            last_registration: OptTime::from(SystemTime::now()),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct OptTime(pub Option<SystemTime>);
 
@@ -134,14 +147,12 @@ mod tests {
         config::load_config(None);
         let db = MollySocketDb::new().unwrap();
         let uuid = "0d2ff653-3d88-43de-bcdb-f6657d3484e4";
-        db.add(&Connection {
-            uuid: String::from(uuid),
-            device_id: 1,
-            password: String::from("pass"),
-            endpoint: String::from("http://0.0.0.0/"),
-            forbidden: false,
-            last_registration: OptTime(None),
-        })
+        db.add(&Connection::new(
+            String::from(uuid),
+            1,
+            String::from("pass"),
+            String::from("http://0.0.0.0/"),
+        ))
         .unwrap();
         assert!(db
             .list()

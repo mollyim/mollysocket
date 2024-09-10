@@ -1,14 +1,10 @@
-use crate::{
-    config,
-    db::{Connection, OptTime},
-    utils::ping,
-};
+use crate::{config, db::Connection, utils::ping};
 use eyre::Result;
 use rocket::{
     get, post, routes,
     serde::{json::Json, Deserialize, Serialize},
 };
-use std::{collections::HashMap, env, str::FromStr, time::SystemTime};
+use std::{collections::HashMap, env, str::FromStr};
 use url::Url;
 
 use super::{metrics::MountMetrics, DB, METRICS, TX};
@@ -129,14 +125,12 @@ async fn register(co_data: Json<ConnectionData>) -> Json<Response> {
 }
 
 fn new_connection(co_data: &Json<ConnectionData>) -> Result<()> {
-    let co = Connection {
-        uuid: co_data.uuid.clone(),
-        device_id: co_data.device_id,
-        password: co_data.password.clone(),
-        endpoint: co_data.endpoint.clone(),
-        forbidden: false,
-        last_registration: OptTime::from(SystemTime::now()),
-    };
+    let co = Connection::new(
+        co_data.uuid.clone(),
+        co_data.device_id,
+        co_data.password.clone(),
+        co_data.endpoint.clone(),
+    );
     DB.add(&co).unwrap();
     if let Some(tx) = &*TX.lock().unwrap() {
         let _ = tx.unbounded_send(co);

@@ -1,8 +1,7 @@
 use std::str::FromStr;
 
 use crate::{
-    config,
-    db::{self, OptTime},
+    config, db,
     utils::{self, anonymize_url},
 };
 use clap::Subcommand;
@@ -71,14 +70,12 @@ async fn add(uuid: &str, device_id: &u32, password: &str, endpoint: &str) {
         println!("Endpoint invalid or forbidden: {}", endpoint);
         return;
     }
-    let _ = db::MollySocketDb::new().unwrap().add(&db::Connection {
-        uuid: uuid.to_string(),
-        device_id: *device_id,
-        password: password.to_string(),
-        endpoint: endpoint.to_string(),
-        forbidden: false,
-        last_registration: OptTime(None),
-    });
+    let _ = db::MollySocketDb::new().unwrap().add(&db::Connection::new(
+        uuid.to_string(),
+        *device_id,
+        password.to_string(),
+        endpoint.to_string(),
+    ));
     if let Err(e) = utils::ping(Url::from_str(endpoint).unwrap()).await {
         log::warn!("Cound not ping the new connection (uuid={}): {e:?}", uuid);
     }
