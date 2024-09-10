@@ -110,6 +110,17 @@ CREATE TABLE IF NOT EXISTS connections(
         Ok(())
     }
 
+    pub fn update_last_registration(&self, uuid: &str) -> Result<()> {
+        let now = OptTime::from(SystemTime::now());
+        self.db.lock().unwrap().execute(
+            "UPDATE connections
+            SET last_registration = ?
+            WHERE uuid = ?;",
+            [&u64::from(&now).to_string(), uuid],
+        )?;
+        Ok(())
+    }
+
     pub fn list(&self) -> Result<Vec<Connection>> {
         self.db
             .lock()

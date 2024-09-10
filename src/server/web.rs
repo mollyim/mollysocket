@@ -100,13 +100,12 @@ async fn register(co_data: Json<ConnectionData>) -> Json<Response> {
             }
         }
         RegistrationStatus::Running => {
-            //TODO: Update last registration for ::Running
-
             // If the connection is "Running" then the device creds still exists,
             // if the user register on another server or delete the linked device,
             // then the connection ends with a 403 Forbidden
             // If the connection is for an invalid uuid or an error occured : we
             // have nothing to do, except if the request ask for a ping
+            DB.update_last_registration(&co_data.uuid).unwrap();
             if co_data.ping.unwrap_or(false) {
                 ping_endpoint(&co_data).await;
             }
