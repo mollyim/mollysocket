@@ -231,7 +231,7 @@ impl SignalWebSocket {
         }
 
         let url = self.push_endpoint.clone();
-        let _ = post_allowed(url, &json!({"urgent": true})).await;
+        let _ = post_allowed(url, &json!({"urgent": true}), Some("mollysocket")).await;
         if let Some(tx) = &self.channels.on_push_tx {
             let _ = tx.unbounded_send(1);
         }
