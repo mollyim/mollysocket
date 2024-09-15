@@ -47,7 +47,11 @@ impl Resolve for ResolveNothing {
     }
 }
 
-pub async fn post_allowed<T: Serialize + ?Sized>(url: Url, body: &T) -> Result<reqwest::Response> {
+pub async fn post_allowed<T: Serialize + ?Sized>(
+    url: Url,
+    body: &T,
+    topic: Option<&str>,
+) -> Result<reqwest::Response> {
     let port = match url.port() {
         Some(p) => p,
         None if url.scheme() == "http" => 80,
@@ -80,8 +84,17 @@ pub async fn post_allowed<T: Serialize + ?Sized>(url: Url, body: &T) -> Result<r
     }
     .build()
     .unwrap();
-
-    Ok(client.post(url).json(&body).send().await?)
+    let mut builder = client
+        .post(url)
+        .header("TTL", "2592000") // 30 days
+        .header("Content-Encoding", "aes128gcm") // Fake this encoding to be web push compliant
+        .header("Urgency", "high");
+    builder = if let Some(topic) = topic {
+        builder.header("Topic", topic) // Should override previous push messages with same topic
+    } else {
+        builder
+    };
+    Ok(builder.json(&body).send().await?)
 }
 
 #[async_trait]
@@ -151,6 +164,7 @@ mod tests {
         post_allowed(
             Url::from_str("https://httpbin.org/post").unwrap(),
             &json!({"urgent": true}),
+            None,
         )
         .await
         .unwrap();
