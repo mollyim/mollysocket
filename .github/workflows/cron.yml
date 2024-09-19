@@ -27,7 +27,7 @@ jobs:
           LAST_TAG=$(git for-each-ref refs/tags --sort=-authordate --format='%(refname:short)' | grep '^[[:digit:]]*\.[[:digit:]]*\.[[:digit:]]$' | head -n1)
           echo "LAST_TAG: $LAST_TAG"
           echo "tag=$LAST_TAG" >> "$GITHUB_OUTPUT"
-          git checkout $LAST_TAG
+        #  git checkout $LAST_TAG
 
       - name: Docker meta
         id: meta
