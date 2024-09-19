@@ -39,13 +39,14 @@ jobs:
           # generate Docker tags based on the following events/attributes
           tags: |
             type=schedule
-            type=raw,value=latest,enable=${{github.ref == 'refs/heads/main' && matrix.flavor == 'debian'}}
+            type=raw,value=latest,enable=${{github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && matrix.flavor == 'debian'}}
+            type=raw,value=latest-${{matrix.flavor}},enable=${{github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
             type=semver,pattern={{version}},value=${{ steps.checkout.outputs.tag }},enable=${{matrix.flavor == 'debian'}}
             type=semver,pattern={{major}}.{{minor}},value=${{ steps.checkout.outputs.tag }},enable=${{matrix.flavor == 'debian'}}
             type=semver,pattern={{major}},value=${{ steps.checkout.outputs.tag }},enable=${{matrix.flavor == 'debian'}}
-            type=semver,pattern={{version}}-{{matrix.flavor}},value=${{ steps.checkout.outputs.tag }}
-            type=semver,pattern={{major}}.{{minor}}-{{matrix.flavor}},value=${{ steps.checkout.outputs.tag }}
-            type=semver,pattern={{major}}-{{matrix.flavor}},value=${{ steps.checkout.outputs.tag }}
+            type=semver,pattern={{version}}-${{matrix.flavor}},value=${{ steps.checkout.outputs.tag }}
+            type=semver,pattern={{major}}.{{minor}}-${{matrix.flavor}},value=${{ steps.checkout.outputs.tag }}
+            type=semver,pattern={{major}}-${{matrix.flavor}},value=${{ steps.checkout.outputs.tag }}
     
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
