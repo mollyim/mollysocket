@@ -1,11 +1,11 @@
-FROM docker.io/rust:bookworm as builder
+FROM docker.io/rust:bookworm AS builder
 WORKDIR app
     
 COPY . .
 RUN cargo build --release --bin mollysocket
 
 
-FROM docker.io/debian:bookworm-slim as runtime
+FROM docker.io/debian:bookworm-slim AS runtime
 WORKDIR app
 
 ENV MOLLY_HOST=127.0.0.1

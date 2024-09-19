@@ -1,4 +1,4 @@
-FROM rust:alpine as builder
+FROM rust:alpine AS builder
 WORKDIR app
 
 COPY . .
@@ -6,7 +6,7 @@ RUN apk add --no-cache musl-dev openssl-dev openssl-libs-static sqlite-dev sqlit
 RUN cargo build --release --bin mollysocket
 
 
-FROM alpine:3 as runtime
+FROM alpine:3 AS runtime
 WORKDIR app
 
 ENV MOLLY_HOST=127.0.0.1
