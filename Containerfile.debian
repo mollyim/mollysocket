@@ -1,8 +1,15 @@
 FROM docker.io/rust:bookworm AS builder
 WORKDIR app
-    
+
+# First build dependencies, this should cache a dependency layer which
+# only needs to be refreshed when Cargo.(lock|toml) is updated
+COPY Cargo.lock Cargo.toml ./
+RUN mkdir src && echo "fn main() { panic!(\"why am i running?\") }" > src/main.rs
+RUN cargo build --release --locked
+RUN rm ./src/main.rs && rmdir ./src
+
 COPY . .
-RUN cargo build --release --bin mollysocket
+RUN cargo build --release --locked --bin mollysocket
 
 
 FROM docker.io/debian:bookworm-slim AS runtime
