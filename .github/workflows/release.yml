@@ -29,7 +29,7 @@ jobs:
           # generate Docker tags based on the following events/attributes
           tags: |
             type=schedule
-            type=raw,value=latest-${{github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && matrix.flavor == 'debian'}},enable=${{github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && matrix.flavor == 'debian'}}
+            type=raw,value=latest,enable=${{github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && matrix.flavor == 'debian'}}
             type=raw,value=latest-${{matrix.flavor}},enable=${{github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
             type=semver,pattern={{version}},value=${{ steps.checkout.outputs.tag }},enable=${{matrix.flavor == 'debian'}}
             type=semver,pattern={{major}}.{{minor}},value=${{ steps.checkout.outputs.tag }},enable=${{matrix.flavor == 'debian'}}
@@ -70,7 +70,7 @@ jobs:
           context: .
           push: true
           file: Containerfile.${{ matrix.flavor }}
-          platforms: linux/amd64,linux/arm64/v8,linux/arm/v7
+          platforms: linux/amd64,linux/arm64/v8${{ matrix.platform == 'debian' && ',linux/arm/v7' || '' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           outputs: |
