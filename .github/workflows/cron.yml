@@ -6,9 +6,16 @@ on:
     # rebuild latest regulary - to resolve CVEs in base images
     - cron: "0 10 * * *"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        flavor: ['debian', 'alpine']
     steps:
       - uses: actions/checkout@v4
         with:
@@ -31,14 +38,23 @@ jobs:
           # list of Docker images to use as base name for tags
           images: |
             ghcr.io/${{ github.repository }}
+          # add flavor to set latest to false and add those with raw values instead
+          flavor: |
+            latest=false
+            prefix=
+            suffix=
           # generate Docker tags based on the following events/attributes
           tags: |
             type=schedule
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=semver,pattern={{version}},value=${{ steps.checkout.outputs.tag }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ steps.checkout.outputs.tag }}
-            type=semver,pattern={{major}},value=${{ steps.checkout.outputs.tag }}
-    
+            type=raw,value=latest,enable=${{github.ref == 'refs/heads/main' && matrix.flavor == 'debian'}}
+            type=raw,value=latest-${{matrix.flavor}},enable=${{github.ref == 'refs/heads/main'}}
+            type=semver,pattern={{version}},value=${{ steps.checkout.outputs.tag }},enable=${{matrix.flavor == 'debian'}}
+            type=semver,pattern={{major}}.{{minor}},value=${{ steps.checkout.outputs.tag }},enable=${{matrix.flavor == 'debian'}}
+            type=semver,pattern={{major}},value=${{ steps.checkout.outputs.tag }},enable=${{matrix.flavor == 'debian'}}
+            type=semver,pattern={{version}}-${{matrix.flavor}},value=${{ steps.checkout.outputs.tag }}
+            type=semver,pattern={{major}}.{{minor}}-${{matrix.flavor}},value=${{ steps.checkout.outputs.tag }}
+            type=semver,pattern={{major}}-${{matrix.flavor}},value=${{ steps.checkout.outputs.tag }}
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -58,7 +74,7 @@ jobs:
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
-          file: Containerfile
-          platforms: linux/amd64,linux/arm64/v8,linux/arm/v7
+          file: Containerfile.${{ matrix.flavor }}
+          platforms: linux/amd64,linux/arm64/v8${{ matrix.platform == 'debian' && ',linux/arm/v7' || '' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

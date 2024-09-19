@@ -1,0 +1,28 @@
+FROM rust:alpine AS builder
+WORKDIR app
+
+RUN apk add --no-cache musl-dev openssl-dev openssl-libs-static sqlite-dev sqlite-static
+
+# First build dependencies, this should cache a dependency layer which
+# only needs to be refreshed when Cargo.(lock|toml) is updated
+COPY Cargo.lock Cargo.toml ./
+RUN mkdir src && echo "fn main() { panic!(\"why am i running?\") }" > src/main.rs
+RUN cargo build --release --locked
+RUN rm ./src/main.rs && rmdir ./src
+
+COPY . .
+RUN cargo build --release --locked --bin mollysocket
+
+
+FROM alpine:3 AS runtime
+WORKDIR app
+
+ENV MOLLY_HOST=127.0.0.1
+ENV MOLLY_PORT=8020
+
+RUN apk add --no-cache ca-certificates 
+
+COPY --from=builder /app/target/release/mollysocket /usr/local/bin/
+HEALTHCHECK --interval=1m --timeout=3s \
+    CMD wget -q --tries=1 "http://$MOLLY_HOST:$MOLLY_PORT/" -O - | grep '"mollysocket":{"version":'
+ENTRYPOINT ["/usr/local/bin/mollysocket"]
