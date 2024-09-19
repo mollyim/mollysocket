@@ -6,9 +6,13 @@ on:
     # rebuild latest regulary - to resolve CVEs in base images
     - cron: "0 10 * * *"
 
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        flavor: ['debian', 'alpine']
     steps:
       - uses: actions/checkout@v4
         with:
@@ -24,7 +28,7 @@ jobs:
           echo "tag=$LAST_TAG" >> "$GITHUB_OUTPUT"
           git checkout $LAST_TAG
 
-      - name: Docker meta (default, debian)
+      - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -34,31 +38,14 @@ jobs:
           # generate Docker tags based on the following events/attributes
           tags: |
             type=schedule
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=semver,pattern={{version}},value=${{ steps.checkout.outputs.tag }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ steps.checkout.outputs.tag }}
-            type=semver,pattern={{major}},value=${{ steps.checkout.outputs.tag }}
+            type=raw,value=latest,enable=${{github.ref == 'refs/heads/main' && matrix.flavor == 'debian'}}
+            type=semver,pattern={{version}},value=${{ steps.checkout.outputs.tag }},enable=${{matrix.flavor == 'debian'}}
+            type=semver,pattern={{major}}.{{minor}},value=${{ steps.checkout.outputs.tag }},enable=${{matrix.flavor == 'debian'}}
+            type=semver,pattern={{major}},value=${{ steps.checkout.outputs.tag }},enable=${{matrix.flavor == 'debian'}}
+            type=semver,pattern={{version}}-{{matrix.flavor}},value=${{ steps.checkout.outputs.tag }}
+            type=semver,pattern={{major}}.{{minor}}-{{matrix.flavor}},value=${{ steps.checkout.outputs.tag }}
+            type=semver,pattern={{major}}-{{matrix.flavor}},value=${{ steps.checkout.outputs.tag }}
     
-      - name: Docker meta (alpine)
-        id: meta-alpine
-        uses: docker/metadata-action@v5
-        with:
-          # list of Docker images to use as base name for tags
-          images: |
-            ghcr.io/${{ github.repository }}
-          # add suffix to all Docker tags
-          flavor: |
-            latest=true
-            prefix=
-            suffix=alpine
-          # generate Docker tags based on the following events/attributes
-          tags: |
-            type=schedule
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=semver,pattern={{version}},value=${{ steps.checkout.outputs.tag }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ steps.checkout.outputs.tag }}
-            type=semver,pattern={{major}},value=${{ steps.checkout.outputs.tag }}
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -73,22 +60,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push (default, debian)
+      - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
-          file: Containerfile.debian
+          file: Containerfile.{{ matrix.flavor }}
           platforms: linux/amd64,linux/arm64/v8,linux/arm/v7
           tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-
-      - name: Build and push (alpine)
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: ${{ github.event_name != 'pull_request' }}
-          file: Containerfile.alpine
-          platforms: linux/amd64,linux/arm64/v8,linux/arm/v7
-          tags: ${{ steps.meta-alpine.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

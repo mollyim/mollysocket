@@ -9,6 +9,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        flavor: ['debian', 'alpine']
     steps:
       - uses: actions/checkout@v4
         with:
@@ -16,7 +19,7 @@ jobs:
           filter: blob:none
           fetch-depth: 0
 
-      - name: Docker meta (default, debian)
+      - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -26,30 +29,13 @@ jobs:
           # generate Docker tags based on the following events/attributes
           tags: |
             type=schedule
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=semver,pattern={{version}},value=${{ steps.checkout.outputs.tag }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ steps.checkout.outputs.tag }}
-            type=semver,pattern={{major}},value=${{ steps.checkout.outputs.tag }}
-
-      - name: Docker meta (alpine)
-        id: meta-alpine
-        uses: docker/metadata-action@v5
-        with:
-          # list of Docker images to use as base name for tags
-          images: |
-            ghcr.io/${{ github.repository }}
-          # add suffix to all Docker tags
-          flavor: |
-            latest=true
-            prefix=
-            suffix=alpine
-          # generate Docker tags based on the following events/attributes
-          tags: |
-            type=schedule
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=semver,pattern={{version}},value=${{ steps.checkout.outputs.tag }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ steps.checkout.outputs.tag }}
-            type=semver,pattern={{major}},value=${{ steps.checkout.outputs.tag }}
+            type=raw,value=latest,enable=${{github.ref == 'refs/heads/main' && matrix.flavor == 'debian'}}
+            type=semver,pattern={{version}},value=${{ steps.checkout.outputs.tag }},enable=${{matrix.flavor == 'debian'}}
+            type=semver,pattern={{major}}.{{minor}},value=${{ steps.checkout.outputs.tag }},enable=${{matrix.flavor == 'debian'}}
+            type=semver,pattern={{major}},value=${{ steps.checkout.outputs.tag }},enable=${{matrix.flavor == 'debian'}}
+            type=semver,pattern={{version}}-{{matrix.flavor}},value=${{ steps.checkout.outputs.tag }}
+            type=semver,pattern={{major}}.{{minor}}-{{matrix.flavor}},value=${{ steps.checkout.outputs.tag }}
+            type=semver,pattern={{major}}-{{matrix.flavor}},value=${{ steps.checkout.outputs.tag }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -76,13 +62,13 @@ jobs:
           mkdir -p artifacts
           mkdir -p out
 
-      - name: Build and publish (default, debian)
+      - name: Build and publish
         id: build
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          file: Containerfile.debian
+          file: Containerfile.{{ matrix.flavor }}
           platforms: linux/amd64,linux/arm64/v8,linux/arm/v7
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -90,21 +76,8 @@ jobs:
             type=local,dest=out
             type=docker
 
-      - name: Build and publish (alpine)
-        id: build
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          file: Containerfile.alpine
-          platforms: linux/amd64,linux/arm64/v8,linux/arm/v7
-          tags: ${{ steps.meta-alpine.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          outputs: |
-            type=local,dest=out
-            type=docker
-
       - name: Copy artifacts
+        if: ${{ matrix.flavor == 'debian' }}
         run: |
           for k in $(ls out/); do
             ARCH=$(basename $k)
@@ -115,6 +88,7 @@ jobs:
           done
 
       - name: Archive artifact
+        if: ${{ matrix.flavor == 'debian' }}
         uses: actions/upload-artifact@v2
         with:
           name: artifacts
