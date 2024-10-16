@@ -156,6 +156,9 @@ impl SignalWebSocket {
         }
     }
 
+    /**
+     * Extract [`Envelope`] from [`request`] and send response to server.
+     */
     async fn request_to_envelope(&self, request: WebSocketRequestMessage) -> Option<Envelope> {
         // dbg!(&request.path);
         let response = self.create_websocket_response(&request);
