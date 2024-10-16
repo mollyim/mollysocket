@@ -11,7 +11,14 @@ mod web;
 lazy_static! {
     static ref DB: MollySocketDb = MollySocketDb::new().unwrap();
     static ref METRICS: Metrics = Metrics::new().unwrap();
-    static ref REFS: Arc<Mutex<Vec<connections::LoopRef>>> = Arc::new(Mutex::new(vec![]));
+    /**
+    Vec of [connections::KillLoopRef].
+
+    Filled by [connections].
+
+    When a message is sent to the kill channel associated to the uuid, the loop for the registration stops.
+    */
+    static ref KILL_VEC: Arc<Mutex<Vec<connections::KillLoopRef>>> = Arc::new(Mutex::new(vec![]));
     /**
      Channel to do action when a new connection is registered.
 

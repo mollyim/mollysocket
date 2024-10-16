@@ -1,7 +1,7 @@
 use crate::{
     config,
     db::Connection,
-    server::{DB, METRICS, NEW_CO_TX, REFS},
+    server::{DB, KILL_VEC, METRICS, NEW_CO_TX},
     ws::SignalWebSocket,
 };
 use eyre::Result;
@@ -9,7 +9,10 @@ use futures_channel::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use futures_util::{future::join_all, join, select, Future, FutureExt, StreamExt};
 use tokio_tungstenite::tungstenite;
 
-pub struct LoopRef {
+/**
+Associates the kill channel to the [Connection][crate::db::Connection]#uuid.
+*/
+pub struct KillLoopRef {
     uuid: String,
     tx: UnboundedSender<bool>,
 }
@@ -63,7 +66,7 @@ async fn connection_loop(co: &mut Connection) {
     // Add the channel to kill the connection if needed
     let (kill_tx, mut kill_rx) = mpsc::unbounded();
     {
-        REFS.lock().unwrap().push(LoopRef {
+        KILL_VEC.lock().unwrap().push(KillLoopRef {
             uuid: co.uuid.clone(),
             tx: kill_tx,
         });
@@ -76,7 +79,7 @@ async fn connection_loop(co: &mut Connection) {
         _ = metrics_future.fuse() => log::warn!("One of the metrics channel has been closed."),
     );
     // Remove the channel to kill the connection
-    let mut refs = REFS.lock().unwrap();
+    let mut refs = KILL_VEC.lock().unwrap();
     if let Some(i_ref) = refs.iter().position(|l_ref| l_ref.uuid.eq(&co.uuid)) {
         refs.remove(i_ref);
     }
@@ -132,7 +135,7 @@ fn handle_connection_closed(res: Result<()>, co: &mut Connection) {
 }
 
 async fn kill(uuid: &str) {
-    let refs = REFS.lock().unwrap();
+    let refs = KILL_VEC.lock().unwrap();
     if let Some(l_ref) = refs.iter().find(|&l_ref| l_ref.uuid.eq(uuid)) {
         let _ = l_ref.tx.clone().unbounded_send(true);
     }
