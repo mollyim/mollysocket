@@ -12,7 +12,14 @@ lazy_static! {
     static ref DB: MollySocketDb = MollySocketDb::new().unwrap();
     static ref METRICS: Metrics = Metrics::new().unwrap();
     static ref REFS: Arc<Mutex<Vec<connections::LoopRef>>> = Arc::new(Mutex::new(vec![]));
-    static ref TX: Arc<Mutex<connections::OptSender>> = Arc::new(Mutex::new(None));
+    /**
+     Channel to do action when a new connection is registered.
+
+     Bounded by [connections].
+
+     When a new connection is sent, loops for connection with this [Connection][crate::db::Connection]#uuid is kill, and a new loop is started.
+     */
+    static ref NEW_CO_TX: Arc<Mutex<connections::OptSender>> = Arc::new(Mutex::new(None));
 }
 
 pub async fn run() {

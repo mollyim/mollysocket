@@ -7,7 +7,7 @@ use rocket::{
 use std::{collections::HashMap, env, str::FromStr};
 use url::Url;
 
-use super::{metrics::MountMetrics, DB, METRICS, TX};
+use super::{metrics::MountMetrics, DB, METRICS, NEW_CO_TX};
 
 #[derive(Serialize)]
 struct Response {
@@ -131,7 +131,7 @@ fn new_connection(co_data: &Json<ConnectionData>) -> Result<()> {
         co_data.endpoint.clone(),
     );
     DB.add(&co).unwrap();
-    if let Some(tx) = &*TX.lock().unwrap() {
+    if let Some(tx) = &*NEW_CO_TX.lock().unwrap() {
         let _ = tx.unbounded_send(co);
     }
     Ok(())

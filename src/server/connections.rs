@@ -1,7 +1,7 @@
 use crate::{
     config,
     db::Connection,
-    server::{DB, METRICS, REFS, TX},
+    server::{DB, METRICS, NEW_CO_TX, REFS},
     ws::SignalWebSocket,
 };
 use eyre::Result;
@@ -25,7 +25,7 @@ pub async fn run() {
 
     let (new_connections_tx, new_connections_rx) = mpsc::unbounded();
     {
-        let mut s_tx = TX.lock().unwrap();
+        let mut s_tx = NEW_CO_TX.lock().unwrap();
         *s_tx = Some(new_connections_tx);
     }
 
