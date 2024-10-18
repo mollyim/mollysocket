@@ -180,6 +180,24 @@ mod tests {
         .unwrap();
     }
 
+    /*
+    #[tokio::test]
+    async fn test_post_localhost() {
+        env::set_var("MOLLY_ALLOWED_ENDPOINTS", "[\"http://127.0.0.1:8001\"]");
+        env::set_var(
+            "MOLLY_VAPID_PRIVKEY",
+            "DSqYuWchrB6yIMYJtidvqANeRQic4uWy34afzZRsZnI",
+        );
+        config::load_config(None);
+        post_allowed(
+            Url::from_str("http://127.0.0.1:8001/test").unwrap(),
+            &json!({"urgent": true}),
+            None,
+        )
+        .await
+        .unwrap();
+    }*/
+
     #[tokio::test]
     async fn test_not_allowed() {
         config::load_config(None);
