@@ -6,6 +6,7 @@ use crate::cli::{connection::ConnectionCommand, test::TestCommand};
 use crate::config;
 
 mod connection;
+mod qrcode;
 mod server;
 mod test;
 mod vapid;
@@ -36,6 +37,9 @@ enum Command {
         #[command(subcommand)]
         command: VapidCommand,
     },
+
+    /// Print mollysocket link URL and show the associated QR code
+    QRCode {},
 
     /// Add, remove and list connections
     Connection {
@@ -83,6 +87,7 @@ pub async fn cli() {
 
     match &cli.command {
         Command::Server {} => server::server().await,
+        Command::QRCode {} => qrcode::qrcode(),
         Command::Connection { command } => connection::connection(command).await,
         Command::Test { command } => test::test(command).await,
         Command::Vapid { command } => vapid::vapid(command),

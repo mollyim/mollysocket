@@ -20,6 +20,7 @@ pub enum SignalEnvironment {
 struct Config {
     host: String,
     port: u16,
+    url: String,
     webserver: bool,
     vapid_privkey: String,
     signal_env: SignalEnvironment,
@@ -40,6 +41,7 @@ impl Default for Config {
         Self {
             host: String::from("127.0.0.1"),
             port: 8020,
+            url: String::from(""),
             webserver: true,
             vapid_privkey: String::from(""),
             signal_env: SignalEnvironment::Production,
@@ -64,6 +66,10 @@ pub fn get_host() -> String {
 
 pub fn get_port() -> u16 {
     get_cfg().port
+}
+
+pub fn get_url() -> String {
+    get_cfg().url.clone()
 }
 
 pub fn is_uuid_valid(uuid: &str) -> bool {
