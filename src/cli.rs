@@ -1,5 +1,6 @@
 use clap::{ArgAction, Parser, Subcommand};
 use std::{env, path::PathBuf};
+use vapid::VapidCommand;
 
 use crate::cli::{connection::ConnectionCommand, test::TestCommand};
 use crate::config;
@@ -7,6 +8,7 @@ use crate::config;
 mod connection;
 mod server;
 mod test;
+mod vapid;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -28,6 +30,12 @@ struct Cli {
 enum Command {
     /// Run webserver and websockets
     Server {},
+
+    /// Generate and test VAPID keys
+    Vapid {
+        #[command(subcommand)]
+        command: VapidCommand,
+    },
 
     /// Add, remove and list connections
     Connection {
@@ -60,6 +68,7 @@ pub async fn cli() {
 
     match &cli.command {
         Command::Server {} => (),
+        Command::Vapid { .. } => (),
         _ => {
             if env::var("RUST_LOG").is_err() {
                 env::set_var("RUST_LOG", "info");
@@ -76,5 +85,6 @@ pub async fn cli() {
         Command::Server {} => server::server().await,
         Command::Connection { command } => connection::connection(command).await,
         Command::Test { command } => test::test(command).await,
+        Command::Vapid { command } => vapid::vapid(command),
     }
 }

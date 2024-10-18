@@ -15,7 +15,7 @@ use std::{
 use trust_dns_resolver::{lookup_ip::LookupIp, TokioAsyncResolver};
 use url::{Host, Url};
 
-use crate::config;
+use crate::{config, vapid};
 
 lazy_static! {
     static ref RESOLVER: TokioAsyncResolver = TokioAsyncResolver::tokio_from_system_conf().unwrap();
@@ -84,6 +84,11 @@ pub async fn post_allowed<T: Serialize + ?Sized>(
     }
     .build()
     .unwrap();
+
+    // That's OK to generate a new VAPID header for each request
+    // It doesn't do too many calculations, and we push at most once per seconde.
+    let vapid = vapid::gen_vapid_header(url.origin()).ok();
+
     let mut builder = client
         .post(url)
         .header("TTL", "2592000") // 30 days
@@ -91,6 +96,11 @@ pub async fn post_allowed<T: Serialize + ?Sized>(
         .header("Urgency", "high");
     builder = if let Some(topic) = topic {
         builder.header("Topic", topic) // Should override previous push messages with same topic
+    } else {
+        builder
+    };
+    builder = if let Some(vapid) = vapid {
+        builder.header("Authorization", vapid)
     } else {
         builder
     };

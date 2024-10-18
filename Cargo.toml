@@ -44,6 +44,9 @@ clap = {version = "4.5.16", features = ["derive"]}
 figment = { version = "0.10.19", features = ["toml", "env"] }
 directories = "5.0.1"
 regex = "1.10.6"
+base64 = "0.22.1"
+jwt = { version = "0.16.0", features = ["openssl"] }
+openssl = "0.10.67"
 
 # [build-dependencies]
 # prost-build = { version = "0.12" }
