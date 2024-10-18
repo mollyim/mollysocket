@@ -46,44 +46,56 @@ pub async fn gen_new_loops(rx: UnboundedReceiver<Connection>) {
 }
 
 async fn connection_loop(co: &mut Connection) {
-    if co.forbidden {
-        log::info!("Ignoring connection for {}", &co.uuid);
-        METRICS.forbiddens.inc();
-        return;
-    }
-    log::info!("Starting connection for {}", &co.uuid);
-    let mut socket = match SignalWebSocket::new(
-        config::get_ws_endpoint(&co.uuid, co.device_id, &co.password),
-        co.endpoint.clone(),
-    ) {
-        Ok(s) => s,
-        Err(e) => {
-            log::info!("An error occured for {}: {}", co.uuid, e);
+    loop {
+        if co.forbidden {
+            log::info!("Ignoring connection for {}", &co.uuid);
+            METRICS.forbiddens.inc();
             return;
         }
-    };
-    let metrics_future = set_metrics(&mut socket);
-    // Add the channel to kill the connection if needed
-    let (kill_tx, mut kill_rx) = mpsc::unbounded();
-    {
-        KILL_VEC.lock().unwrap().push(KillLoopRef {
-            uuid: co.uuid.clone(),
-            tx: kill_tx,
-        });
+        log::info!("Starting connection for {}", &co.uuid);
+        let mut socket = match SignalWebSocket::new(
+            config::get_ws_endpoint(&co.uuid, co.device_id, &co.password),
+            co.endpoint.clone(),
+        ) {
+            Ok(s) => s,
+            Err(e) => {
+                log::info!("An error occured for {}: {}", co.uuid, e);
+                return;
+            }
+        };
+        let metrics_future = set_metrics(&mut socket);
+        // Add the channel to kill the connection if needed
+        let (kill_tx, mut kill_rx) = mpsc::unbounded();
+        {
+            KILL_VEC.lock().unwrap().push(KillLoopRef {
+                uuid: co.uuid.clone(),
+                tx: kill_tx,
+            });
+        }
+        METRICS.connections.inc();
+        // bool to stop looping if the connection has been explicitely killed.
+        let mut stop_loop = false;
+        // loop connection
+        select!(
+            res = socket.connection_loop().fuse() => handle_connection_closed(res, co),
+            _ = metrics_future.fuse() => log::warn!("[{}] One of the metrics channel has been closed.", co.uuid),
+            _ = kill_rx.next().fuse() => {
+                log::info!("[{}] Connection killed", co.uuid);
+                // We don't want the loop to restart if the connection has been killed.
+                stop_loop = true;
+                },
+        );
+        // Remove the channel to kill the connection
+        let mut refs = KILL_VEC.lock().unwrap();
+        if let Some(i_ref) = refs.iter().position(|l_ref| l_ref.uuid.eq(&co.uuid)) {
+            refs.remove(i_ref);
+        }
+        METRICS.connections.dec();
+        // the connection has been killed, we don't loop.
+        if stop_loop {
+            return;
+        }
     }
-    METRICS.connections.inc();
-    // loop
-    select!(
-        res = socket.connection_loop().fuse() => handle_connection_closed(res, co),
-        _ = kill_rx.next().fuse() => log::info!("Connection killed"),
-        _ = metrics_future.fuse() => log::warn!("One of the metrics channel has been closed."),
-    );
-    // Remove the channel to kill the connection
-    let mut refs = KILL_VEC.lock().unwrap();
-    if let Some(i_ref) = refs.iter().position(|l_ref| l_ref.uuid.eq(&co.uuid)) {
-        refs.remove(i_ref);
-    }
-    METRICS.connections.dec();
 }
 
 fn set_metrics(socket: &mut SignalWebSocket) -> impl Future<Output = ()> {
