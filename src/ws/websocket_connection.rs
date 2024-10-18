@@ -97,7 +97,7 @@ pub trait WebSocketConnection {
             Ok(msg) => msg,
             Err(e) => {
                 log::error!("Failed to decode protobuf: {}", e);
-                return ;
+                return;
             }
         };
         self.on_message(ws_message).await;
@@ -141,8 +141,10 @@ pub trait WebSocketConnection {
     }
 
     async fn loop_keepalive(&self, timer_tx: mpsc::UnboundedSender<bool>) {
+        // Get the ref of last_keepalive
         let last_keepalive = self.get_last_keepalive();
         loop {
+            // read last_keepalive
             if last_keepalive.lock().unwrap().elapsed() > KEEPALIVE_TIMEOUT {
                 log::warn!("Did not receive the last keepalive: aborting.");
                 break;
