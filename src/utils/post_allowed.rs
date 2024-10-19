@@ -6,7 +6,6 @@ use reqwest::{dns::Resolve, redirect::Policy};
 use serde::Serialize;
 use std::net;
 use std::{
-    error::Error as StdError,
     fmt::{Display, Formatter},
     iter,
     net::{IpAddr, Ipv4Addr, SocketAddr},
@@ -33,7 +32,7 @@ impl Display for Error {
     }
 }
 
-impl StdError for Error {}
+impl std::error::Error for Error {}
 
 struct ResolveNothing;
 
