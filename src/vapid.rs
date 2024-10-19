@@ -1,6 +1,5 @@
 use std::{
     collections::BTreeMap,
-    error::Error as StdError,
     fmt::{Display, Formatter},
     ops::Add,
     time::{Duration, SystemTime, UNIX_EPOCH},
@@ -33,7 +32,7 @@ struct SignerWithPubKey {
 }
 
 #[derive(Debug)]
-enum Error {
+pub enum Error {
     VapidKeyError,
 }
 
@@ -43,7 +42,7 @@ impl Display for Error {
     }
 }
 
-impl StdError for Error {}
+impl std::error::Error for Error {}
 
 pub fn get_vapid_pubkey() -> Result<&'static str> {
     let key = KEY.as_ref().ok_or(Error::VapidKeyError)?;

@@ -1,7 +1,10 @@
 use crate::{config, db::Connection, utils::ping};
 use eyre::Result;
+use html::get_index;
 use rocket::{
-    get, post, routes,
+    get, post,
+    response::{content::RawHtml, Responder},
+    routes,
     serde::{json::Json, Deserialize, Serialize},
 };
 use std::{collections::HashMap, env, str::FromStr};
@@ -9,8 +12,10 @@ use url::Url;
 
 use super::{metrics::MountMetrics, DB, METRICS, NEW_CO_TX};
 
+mod html;
+
 #[derive(Serialize)]
-struct Response {
+struct ApiResponse {
     mollysocket: HashMap<String, String>,
 }
 
@@ -52,13 +57,50 @@ impl From<RegistrationStatus> for String {
     }
 }
 
+struct UA<'r>(&'r str);
+
+#[rocket::async_trait]
+impl<'r> rocket::request::FromRequest<'r> for UA<'r> {
+    type Error = ();
+
+    async fn from_request(
+        request: &'r rocket::request::Request<'_>,
+    ) -> rocket::request::Outcome<UA<'r>, ()> {
+        let ua = request.headers().get_one("user-agent").unwrap_or("");
+        rocket::request::Outcome::Success(UA(ua))
+    }
+}
+
+enum Resp {
+    Json(Json<ApiResponse>),
+    Html(RawHtml<String>),
+}
+
+impl<'r> Responder<'r, 'r> for Resp {
+    fn respond_to(self, request: &'r rocket::Request<'_>) -> rocket::response::Result<'r> {
+        match self {
+            Resp::Json(r) => r.respond_to(request),
+            Resp::Html(r) => r.respond_to(request),
+        }
+    }
+}
+
 #[get("/")]
-fn discover() -> Json<Response> {
-    gen_rep(HashMap::new())
+fn index(ua: UA) -> Resp {
+    if ua.0.contains("Signal-Android") {
+        Resp::Json(gen_api_rep(HashMap::new()))
+    } else {
+        Resp::Html(RawHtml(get_index()))
+    }
+}
+
+#[get("/discover")]
+fn discover() -> Json<ApiResponse> {
+    gen_api_rep(HashMap::new())
 }
 
 #[post("/", format = "application/json", data = "<co_data>")]
-async fn register(co_data: Json<ConnectionData>) -> Json<Response> {
+async fn register(co_data: Json<ConnectionData>) -> Json<ApiResponse> {
     let mut status = registration_status(&co_data).await;
     match status {
         RegistrationStatus::New | RegistrationStatus::CredsUpdated => {
@@ -117,7 +159,7 @@ async fn register(co_data: Json<ConnectionData>) -> Json<Response> {
         }
     }
     log::debug!("Status: {status:?}");
-    gen_rep(HashMap::from([(
+    gen_api_rep(HashMap::from([(
         String::from("status"),
         String::from(status),
     )]))
@@ -179,12 +221,12 @@ async fn registration_status(co_data: &ConnectionData) -> RegistrationStatus {
     }
 }
 
-fn gen_rep(mut map: HashMap<String, String>) -> Json<Response> {
+fn gen_api_rep(mut map: HashMap<String, String>) -> Json<ApiResponse> {
     map.insert(
         String::from("version"),
         env!("CARGO_PKG_VERSION").to_string(),
     );
-    Json(Response { mollysocket: map })
+    Json(ApiResponse { mollysocket: map })
 }
 
 pub async fn launch() {
@@ -199,7 +241,7 @@ pub async fn launch() {
 
     let _ = rocket::build()
         .configure(rocket_cfg)
-        .mount("/", routes![discover, register])
+        .mount("/", routes![index, discover, register])
         .mount_metrics("/metrics", &METRICS)
         .launch()
         .await;
