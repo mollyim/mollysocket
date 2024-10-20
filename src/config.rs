@@ -56,20 +56,21 @@ fn get_cfg() -> &'static Config {
     CONFIG.get().expect("Config is not initialized yet.")
 }
 
-pub fn get_db() -> String {
-    get_cfg().db.clone()
+/// Get db filename
+pub fn get_db() -> &'static str {
+    &get_cfg().db
 }
 
-pub fn get_host() -> String {
-    get_cfg().host.clone()
+pub fn get_host() -> &'static str {
+    &get_cfg().host
 }
 
 pub fn get_port() -> u16 {
     get_cfg().port
 }
 
-pub fn get_url() -> String {
-    get_cfg().url.clone()
+pub fn get_url() -> &'static str {
+    &get_cfg().url
 }
 
 pub fn is_uuid_valid(uuid: &str) -> bool {

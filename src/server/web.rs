@@ -236,8 +236,8 @@ pub async fn launch() {
     }
 
     let rocket_cfg = rocket::Config::figment()
-        .merge(("address", &config::get_host()))
-        .merge(("port", &config::get_port()));
+        .merge(("address", config::get_host()))
+        .merge(("port", config::get_port()));
 
     let _ = rocket::build()
         .configure(rocket_cfg)

@@ -32,7 +32,7 @@ pub fn gen_url() -> Result<Url> {
         if ms_url.is_empty() {
             return Err(eyre!(Error::NoUrlDefinedError));
         }
-        url.query_pairs_mut().append_pair("url", &ms_url);
+        url.query_pairs_mut().append_pair("url", ms_url);
         url.query_pairs_mut().append_pair("type", "webserver");
     } else {
         url.query_pairs_mut().append_pair("type", "airgapped");
