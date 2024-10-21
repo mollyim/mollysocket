@@ -57,17 +57,33 @@ impl From<RegistrationStatus> for String {
     }
 }
 
-struct UA<'r>(&'r str);
+struct Req<'r> {
+    ua: &'r str,
+    uri: Option<String>,
+    airgapped: bool,
+}
 
 #[rocket::async_trait]
-impl<'r> rocket::request::FromRequest<'r> for UA<'r> {
+impl<'r> rocket::request::FromRequest<'r> for Req<'r> {
     type Error = ();
 
     async fn from_request(
         request: &'r rocket::request::Request<'_>,
-    ) -> rocket::request::Outcome<UA<'r>, ()> {
+    ) -> rocket::request::Outcome<Req<'r>, ()> {
         let ua = request.headers().get_one("user-agent").unwrap_or("");
-        rocket::request::Outcome::Success(UA(ua))
+        let airgapped = request.query_value::<&str>("airgapped").is_some();
+        let origin = request
+            .headers()
+            .get_one("X-Original-URL")
+            .map(|h| rocket::http::uri::Origin::parse(h).ok())
+            .flatten()
+            .unwrap_or_else(|| request.uri().clone());
+        let path = origin.path().as_str();
+        // We assume this is https
+        let uri = request
+            .host()
+            .map(|h| format!("https://{}{}", h.to_string(), path));
+        rocket::request::Outcome::Success(Req { ua, uri, airgapped })
     }
 }
 
@@ -86,11 +102,11 @@ impl<'r> Responder<'r, 'r> for Resp {
 }
 
 #[get("/")]
-fn index(ua: UA) -> Resp {
-    if ua.0.contains("Signal-Android") {
+fn index(req: Req) -> Resp {
+    if req.ua.contains("Signal-Android") {
         Resp::Json(gen_api_rep(HashMap::new()))
     } else {
-        Resp::Html(RawHtml(get_index()))
+        Resp::Html(RawHtml(get_index(req.airgapped, req.uri.as_deref())))
     }
 }
 

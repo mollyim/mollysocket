@@ -13,6 +13,22 @@ macro_rules! index {
 <h1>MollySocket</h1>
 {}
 <p>Version {}</p>
+<script>
+let ms_link = new URL(document.getElementById("ms-link").href)
+let param_url
+if (param_url = ms_link.searchParams.get("url")) {{
+    let parsed_url = new URL(param_url)
+    if (document.location.origin != parsed_url.origin) {{
+        alert(`Origin doesn't seem to be correctly passed to mollysocket. Expecting ${{document.location.origin}}, found ${{parsed_url.origin}}
+
+You may have forgotten to proxy pass the Host value to mollysocket, or wish to use this server in airgapped mode.`)
+    }} else if (document.location.pathname != parsed_url.pathname) {{
+        alert(`Pathname doesn't seem to be correctly passed to mollysocket. Expecting ${{document.location.pathname}}, found ${{parsed_url.pathname}}
+
+You may have forgotten to proxy pass the path value to mollysocket (with X-Original-URL header), or wish to use this server in airgapped mode.`)
+    }}
+}}
+</script>
 </body>
 </html>
         "#,
@@ -22,30 +38,50 @@ macro_rules! index {
     };
 }
 
-pub fn get_index() -> String {
+pub fn get_index(airgapped: bool, ms_url: Option<&str>) -> String {
     let intro = qrcode::INTRO;
-    let url = match qrcode::gen_url() {
+    let url = if airgapped {
+        qrcode::gen_url_airgapped()
+    } else {
+        let ms_url = match ms_url {
+            Some(u) => u,
+            None => return no_url(),
+        };
+        qrcode::gen_url(ms_url)
+    };
+
+    let url = match url {
         Ok(u) => u,
         Err(e) => {
             if let Some(vapid::Error::VapidKeyError) = e.downcast_ref::<vapid::Error>() {
                 return no_vapid();
-            } else if let Some(qrcode::Error::NoUrlDefinedError) = e.downcast_ref::<qrcode::Error>()
-            {
-                return no_url();
             }
             return generic_error();
         }
     };
     let qr = qrcode::url_to_svg_qr(&url);
 
-    index!(format!(
-        r#"
-<p>{intro}<br><a href="{url}">{url}</a></p>
+    if airgapped {
+        index!(format!(
+            r#"
+<p>{intro}<br><a id="ms-link" href="{url}">{url}</a></p>
 <div style="max-width: 25rem;">
 {qr}
 </div>
+<p><i>Wish to use <a href="?">with the webserver</a> ?</i></p>
         "#,
-    ))
+        ))
+    } else {
+        index!(format!(
+            r#"
+<p>{intro}<br><a id="ms-link" href="{url}">{url}</a></p>
+<div style="max-width: 25rem;">
+{qr}
+</div>
+<p><i>Wish to use in <a href="?airgapped">airgapped mode</a> ?</i></p>
+        "#,
+        ))
+    }
 }
 
 fn no_vapid() -> String {
@@ -53,7 +89,7 @@ fn no_vapid() -> String {
 }
 
 fn no_url() -> String {
-    index!("<p>URL is not defined. Configure the URL and try again.</p>")
+    index!("<p>URL not found. The request seems to be incorrectly formatted.</p>")
 }
 
 fn generic_error() -> String {

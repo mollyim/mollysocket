@@ -1,42 +1,28 @@
-use std::fmt::{Display, Formatter};
-
-use eyre::{eyre, Result};
+use eyre::Result;
 use qrcodegen::{QrCode, QrCodeEcc};
 use url::Url;
 
-use crate::{config, vapid};
-
-#[derive(Debug)]
-pub enum Error {
-    NoUrlDefinedError,
-}
-
-impl Display for Error {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-impl std::error::Error for Error {}
+use crate::vapid;
 
 pub const INTRO: &str =
     "Scan the folowing QR code to link mollysocket, or enter the following link manually:";
 
-/// Generate deep link to link mollysocket to molly
-pub fn gen_url() -> Result<Url> {
+/// Generate deep link to link mollysocket to molly with url
+pub fn gen_url(ms_url: &str) -> Result<Url> {
     let mut url = Url::parse("mollysocket://link")?;
     let vapid = vapid::get_vapid_pubkey()?;
     url.query_pairs_mut().append_pair("vapid", vapid);
-    if config::should_start_webserver() {
-        let ms_url = config::get_url();
-        if ms_url.is_empty() {
-            return Err(eyre!(Error::NoUrlDefinedError));
-        }
-        url.query_pairs_mut().append_pair("url", ms_url);
-        url.query_pairs_mut().append_pair("type", "webserver");
-    } else {
-        url.query_pairs_mut().append_pair("type", "airgapped");
-    }
+    url.query_pairs_mut().append_pair("url", ms_url);
+    url.query_pairs_mut().append_pair("type", "webserver");
+    Ok(url)
+}
+
+/// Generate deep link to link mollysocket to molly in airgapped mode
+pub fn gen_url_airgapped() -> Result<Url> {
+    let mut url = Url::parse("mollysocket://link")?;
+    let vapid = vapid::get_vapid_pubkey()?;
+    url.query_pairs_mut().append_pair("vapid", vapid);
+    url.query_pairs_mut().append_pair("type", "airgapped");
     Ok(url)
 }
 

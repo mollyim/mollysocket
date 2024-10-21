@@ -1,4 +1,5 @@
 use clap::{ArgAction, Parser, Subcommand};
+use qrcode::QrcodeCommand;
 use std::{env, path::PathBuf};
 use vapid::VapidCommand;
 
@@ -39,7 +40,10 @@ enum Command {
     },
 
     /// Print mollysocket link URL and show the associated QR code
-    QRCode {},
+    QRCode {
+        #[command(subcommand)]
+        command: QrcodeCommand,
+    },
 
     /// Add, remove and list connections
     Connection {
@@ -87,7 +91,7 @@ pub async fn cli() {
 
     match &cli.command {
         Command::Server {} => server::server().await,
-        Command::QRCode {} => qrcode::qrcode(),
+        Command::QRCode { command } => qrcode::qrcode(command),
         Command::Connection { command } => connection::connection(command).await,
         Command::Test { command } => test::test(command).await,
         Command::Vapid { command } => vapid::vapid(command),
