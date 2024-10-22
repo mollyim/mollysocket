@@ -21,7 +21,7 @@ struct Config {
     host: String,
     port: u16,
     webserver: bool,
-    vapid_privkey: String,
+    vapid_privkey: Option<String>,
     signal_env: SignalEnvironment,
     allowed_endpoints: Vec<String>,
     allowed_uuids: Vec<String>,
@@ -41,7 +41,7 @@ impl Default for Config {
             host: String::from("127.0.0.1"),
             port: 8020,
             webserver: true,
-            vapid_privkey: String::from(""),
+            vapid_privkey: None,
             signal_env: SignalEnvironment::Production,
             allowed_endpoints: vec![String::from("*")],
             allowed_uuids: vec![String::from("*")],
@@ -75,8 +75,8 @@ pub fn should_start_webserver() -> bool {
     get_cfg().webserver
 }
 
-pub fn get_vapid_privkey() -> &'static str {
-    &get_cfg().vapid_privkey
+pub fn get_vapid_privkey() -> Option<&'static str> {
+    get_cfg().vapid_privkey.as_deref()
 }
 
 pub fn get_ws_endpoint(uuid: &str, devide_id: u32, password: &str) -> String {

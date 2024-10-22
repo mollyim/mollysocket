@@ -84,7 +84,10 @@ fn gen_vapid_header_with_key(origin: url::Origin, key: &SignerWithPubKey) -> Res
 Get [SignerWithPubKey] from the config private key.
 */
 fn get_signer_from_conf() -> Result<SignerWithPubKey> {
-    get_signer(config::get_vapid_privkey())
+    match config::get_vapid_privkey() {
+        Some(k) => get_signer(k),
+        None => Err(eyre!(Error::VapidKeyError)),
+    }
 }
 
 /**
