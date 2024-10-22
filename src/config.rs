@@ -22,6 +22,7 @@ struct Config {
     port: u16,
     webserver: bool,
     vapid_privkey: Option<String>,
+    vapid_key_file: Option<String>,
     signal_env: SignalEnvironment,
     allowed_endpoints: Vec<String>,
     allowed_uuids: Vec<String>,
@@ -42,6 +43,7 @@ impl Default for Config {
             port: 8020,
             webserver: true,
             vapid_privkey: None,
+            vapid_key_file: None,
             signal_env: SignalEnvironment::Production,
             allowed_endpoints: vec![String::from("*")],
             allowed_uuids: vec![String::from("*")],
@@ -111,7 +113,7 @@ pub fn load_config(cli_config_path: Option<PathBuf>) {
 
         figment = figment.merge(Env::prefixed("MOLLY_").ignore(&["conf"]));
 
-        match figment.extract() {
+        let mut config: Config = match figment.extract() {
             Ok(config) => config,
             Err(figment_err) => {
                 for err in figment_err {
@@ -119,7 +121,16 @@ pub fn load_config(cli_config_path: Option<PathBuf>) {
                 }
                 process::exit(0x0001);
             }
+        };
+        if let Some(file) = &config.vapid_key_file {
+            config.vapid_privkey = Some(
+                std::fs::read_to_string(file)
+                    .expect("Cannot read MOLLY_VAPID_KEY_FILE")
+                    .trim_end()
+                    .to_string(),
+            );
         }
+        config
     });
 }
 
