@@ -42,6 +42,48 @@ Switch back to your usual account: `exit`.
 
 Download the [systemd unit file](https://github.com/mollyim/mollysocket/raw/main/mollysocket.service) and place it in the right direction `/etc/systemd/system/`.
 
+### Add a VAPID key
+
+#### (Recommended) With systemd-creds
+
+You can use [systemd-creds](https://systemd.io/CREDENTIALS/) to encrypt the vapid key:
+
+```console
+$ mollysocket vapid gen | systemd-creds encrypt --name=ms_vapid -p - -
+SetCredentialEncrypted=ms_vapid: \
+        k6iUCUh0RJCQyvL8k8q1UyAAAAABAAAADAAAABAAAAC1lFmbWAqWZ8dCCQkAAAAAgAAAA \
+        AAAAAALACMA0AAAACAAAAAAfgAg9uNpGmj8LL2nHE0ixcycvM3XkpOCaf+9rwGscwmqRJ \
+        cAEO24kB08FMtd/hfkZBX8PqoHd/yPTzRxJQBoBsvo9VqolKdy9Wkvih0HQnQ6NkTKEdP \
+        HQ08+x8sv5sr+Mkv4ubp3YT1Jvv7CIPCbNhFtag1n5y9J7bTOKt2SQwBOAAgACwAAABIA \
+        ID8H3RbsT7rIBH02CIgm/Gv1ukSXO3DMHmVQkDG0wEciABAAII6LvrmL60uEZcp5qnEkx \
+        SuhUjsDoXrJs0rfSWX4QAx5PwfdFuxPusgE==
+```
+
+This will output `SetCredentialEncrypted` you can use in your systemd unit file:
+
+```ini
+[Service]
+SetCredentialEncrypted=ms_vapid: \
+        k6iUCUh0RJCQyvL8k8q1UyAAAAABAAAADAAAABAAAAC1lFmbWAqWZ8dCCQkAAAAAgAAAA \
+        AAAAAALACMA0AAAACAAAAAAfgAg9uNpGmj8LL2nHE0ixcycvM3XkpOCaf+9rwGscwmqRJ \
+        cAEO24kB08FMtd/hfkZBX8PqoHd/yPTzRxJQBoBsvo9VqolKdy9Wkvih0HQnQ6NkTKEdP \
+        HQ08+x8sv5sr+Mkv4ubp3YT1Jvv7CIPCbNhFtag1n5y9J7bTOKt2SQwBOAAgACwAAABIA \
+        ID8H3RbsT7rIBH02CIgm/Gv1ukSXO3DMHmVQkDG0wEciABAAII6LvrmL60uEZcp5qnEkx \
+        SuhUjsDoXrJs0rfSWX4QAx5PwfdFuxPusgE==
+Environment=MOLLY_VAPID_KEY_FILE=%d/ms_vapid
+```
+
+#### Plaintext
+
+It is also possible to pass this value in plaintext. Add the value of `mollysocket vapid gen` to an environment variable in your unit file:
+
+```ini
+[Service]
+Environment=MOLLY_VAPID_PRIVKEY=DSqYuWchrB6yIMYJtidvqANeRQic4uWy34afzZRsZnI
+```
+
+### Start the service
+
 You should be able to see that service now `systemctl status mollysocket`.
 
 You can enable it `systemctl enable --now mollysocket`, the service is now active (`systemctl status mollysocket`), and will be started on system boot.

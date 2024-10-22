@@ -57,8 +57,45 @@ The configuration file uses the [TOML format](https://toml.io/). Below is an ove
 | allowed_endpoints      | MOLLY_ALLOWED_ENDPOINTS \* |             | List of UnifiedPush servers                       | `["*"]`              | `["*"]`,`["https://yourdomain.tld","https://ntfy.sh"]`  |
 | allowed_uuids          | MOLLY_ALLOWED_UUIDS     \* |             | UUIDs of signal accounts that may use this server | `["*"]`              | `["*"]`, `["abcdef-12345-tuxyz-67890"]`                 |
 | db                     | MOLLY_DB                \* |             | Path to the DB                                    | `db.sqlite`          | `"/data/ms.sqlite"`                                     |
+| vapid_privkey          | MOLLY_VAPID_PRIVKEY     \* |             | VAPID key, see [VAPID key](#vapid-key)            | None                 | "DSqYuWchrB6yIMYJtidvqANeRQic4uWy34afzZRsZnI"           |
+| vapid_key_file         | MOLLY_VAPID_KEY_FILE    \* |             | File with VAPID key, see [VAPID key](#vapid-key)  | None                 | "/etc/ms_vapid_key"                                     |
 
 \* Takes the precedence
+
+### VAPID key
+
+VAPID key is used to authorize mollysocket server to send requests to your push server, if it supports it.
+
+To generate a new key, you can run this command `mollysocket vapid gen`. Or using docker, `docker-compose run mollysocket vapid gen`.
+
+This value can be passed to mollysocket via a file, location given with `vapid_key_file` parameter, or directly in the `vapid_privkey` parameter. _The key file takes the precedence_.
+
+To pass this value to mollysocket, you may wish to use [systemd-creds](https://systemd.io/CREDENTIALS/):
+
+```console
+$ mollysocket vapid gen | systemd-creds encrypt --name=ms_vapid -p - -
+SetCredentialEncrypted=ms_vapid: \
+        k6iUCUh0RJCQyvL8k8q1UyAAAAABAAAADAAAABAAAAC1lFmbWAqWZ8dCCQkAAAAAgAAAA \
+        AAAAAALACMA0AAAACAAAAAAfgAg9uNpGmj8LL2nHE0ixcycvM3XkpOCaf+9rwGscwmqRJ \
+        cAEO24kB08FMtd/hfkZBX8PqoHd/yPTzRxJQBoBsvo9VqolKdy9Wkvih0HQnQ6NkTKEdP \
+        HQ08+x8sv5sr+Mkv4ubp3YT1Jvv7CIPCbNhFtag1n5y9J7bTOKt2SQwBOAAgACwAAABIA \
+        ID8H3RbsT7rIBH02CIgm/Gv1ukSXO3DMHmVQkDG0wEciABAAII6LvrmL60uEZcp5qnEkx \
+        SuhUjsDoXrJs0rfSWX4QAx5PwfdFuxPusgE==
+```
+
+This will output `SetCredentialEncrypted` you can use in your systemd unit file:
+
+```ini
+[Service]
+SetCredentialEncrypted=ms_vapid: \
+        k6iUCUh0RJCQyvL8k8q1UyAAAAABAAAADAAAABAAAAC1lFmbWAqWZ8dCCQkAAAAAgAAAA \
+        AAAAAALACMA0AAAACAAAAAAfgAg9uNpGmj8LL2nHE0ixcycvM3XkpOCaf+9rwGscwmqRJ \
+        cAEO24kB08FMtd/hfkZBX8PqoHd/yPTzRxJQBoBsvo9VqolKdy9Wkvih0HQnQ6NkTKEdP \
+        HQ08+x8sv5sr+Mkv4ubp3YT1Jvv7CIPCbNhFtag1n5y9J7bTOKt2SQwBOAAgACwAAABIA \
+        ID8H3RbsT7rIBH02CIgm/Gv1ukSXO3DMHmVQkDG0wEciABAAII6LvrmL60uEZcp5qnEkx \
+        SuhUjsDoXrJs0rfSWX4QAx5PwfdFuxPusgE==
+Environment=MOLLY_VAPID_KEY_FILE=%d/ms_vapid
+```
 
 #### `allowed_endpoints`
 
