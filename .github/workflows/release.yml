@@ -69,7 +69,7 @@ jobs:
 
       - name: Prepare artifacts
         run: |
-          mkdir -p artifacts
+          mkdir -p artifacts-${{ matrix.flavor }}
           mkdir -p out
 
       - name: Build and publish
@@ -95,16 +95,16 @@ jobs:
             fi
             echo $ARCH
             if [ -f out/$k/usr/local/bin/mollysocket ]; then
-              cp out/$k/usr/local/bin/mollysocket artifacts/mollysocket-$ARCH
+              cp out/$k/usr/local/bin/mollysocket artifacts-${{ matrix.flavor }}/mollysocket-$ARCH
             fi
           done
 
       - name: Archive artifact
         uses: actions/upload-artifact@v4
         with:
-          name: artifacts
+          name: artifacts-${{ matrix.flavor }}
           path: |
-            ./artifacts
+            ./artifacts-${{ matrix.flavor }}
 
   publish:
     name: Publish
@@ -116,7 +116,13 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: artifacts-*
+          merge-multiple: true
+
+      - run: ls -R ./artifacts
 
       - name: Create release draft
         run: gh release create -d -t "$GITHUB_REF_NAME" "$GITHUB_REF_NAME" ./artifacts/*
