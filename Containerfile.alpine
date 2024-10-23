@@ -17,7 +17,7 @@ RUN cargo build --release --locked --bin mollysocket
 FROM alpine:3 AS runtime
 WORKDIR app
 
-ENV MOLLY_HOST=127.0.0.1
+ENV MOLLY_HOST=0.0.0.0
 ENV MOLLY_PORT=8020
 
 RUN apk add --no-cache ca-certificates 
