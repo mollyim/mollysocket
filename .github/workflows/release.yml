@@ -87,10 +87,12 @@ jobs:
             type=docker
 
       - name: Copy artifacts
-        if: ${{ matrix.flavor == 'debian' }}
         run: |
           for k in $(ls out/); do
             ARCH=$(basename $k)
+            if [[ "${{ matrix.flavor }}" == "alpine" ]]; then
+              ARCH="musl-$ARCH"
+            fi
             echo $ARCH
             if [ -f out/$k/usr/local/bin/mollysocket ]; then
               cp out/$k/usr/local/bin/mollysocket artifacts/mollysocket-$ARCH
@@ -98,7 +100,6 @@ jobs:
           done
 
       - name: Archive artifact
-        if: ${{ matrix.flavor == 'debian' }}
         uses: actions/upload-artifact@v4
         with:
           name: artifacts
