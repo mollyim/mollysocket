@@ -79,7 +79,7 @@ jobs:
           context: .
           push: true
           file: Containerfile.${{ matrix.flavor }}
-          platforms: linux/amd64,linux/arm64/v8${{ matrix.platform == 'debian' && ',linux/arm/v7' || '' }}
+          platforms: linux/amd64,linux/arm64/v8${{ matrix.flavor == 'debian' && ',linux/arm/v7' || '' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           outputs: |
