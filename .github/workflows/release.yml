@@ -38,8 +38,8 @@ jobs:
           # generate Docker tags based on the following events/attributes
           tags: |
             type=schedule
-            type=raw,value=latest,enable=${{github.ref == 'refs/heads/main' && matrix.flavor == 'debian'}}
-            type=raw,value=latest-${{matrix.flavor}},enable=${{github.ref == 'refs/heads/main'}}
+            type=raw,value=latest,enable=${{matrix.flavor == 'debian'}}
+            type=raw,value=latest-${{matrix.flavor}}
             type=semver,pattern={{version}},value=${{ steps.checkout.outputs.tag }},enable=${{matrix.flavor == 'debian'}}
             type=semver,pattern={{major}}.{{minor}},value=${{ steps.checkout.outputs.tag }},enable=${{matrix.flavor == 'debian'}}
             type=semver,pattern={{major}},value=${{ steps.checkout.outputs.tag }},enable=${{matrix.flavor == 'debian'}}
