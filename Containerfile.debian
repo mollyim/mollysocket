@@ -17,5 +17,5 @@ RUN apt update && \
 
 COPY --from=builder /app/target/release/mollysocket /usr/local/bin/
 HEALTHCHECK --interval=1m --timeout=3s \
-    CMD wget -q --tries=1 "http://$MOLLY_HOST:$MOLLY_PORT/" -O - | grep '"mollysocket":{"version":'
+    CMD wget -q --tries=1 "http://$MOLLY_HOST:$MOLLY_PORT/discover" -O - | grep '"mollysocket":{"version":'
 ENTRYPOINT ["/usr/local/bin/mollysocket"]
