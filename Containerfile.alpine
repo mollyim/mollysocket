@@ -4,7 +4,7 @@ WORKDIR app
 RUN apk add --no-cache musl-dev openssl-dev openssl-libs-static sqlite-dev sqlite-static
 
 COPY . .
-RUN cargo build --release --locked --bin mollysocket
+RUN cargo build --release --bin mollysocket
 
 
 FROM alpine:3 AS runtime

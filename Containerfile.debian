@@ -2,7 +2,7 @@ FROM docker.io/rust:bookworm AS builder
 WORKDIR app
 
 COPY . .
-RUN cargo build --release --locked --bin mollysocket
+RUN cargo build --release --bin mollysocket
 
 
 FROM docker.io/debian:bookworm-slim AS runtime
