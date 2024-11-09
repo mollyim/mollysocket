@@ -139,7 +139,6 @@ fn handle_connection_closed(res: Result<()>, co: &mut Connection) {
                 if status == 403 {
                     co.forbidden = true;
                     let _ = DB.add(co);
-                    METRICS.forbiddens.inc()
                 }
             }
         }
