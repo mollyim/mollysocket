@@ -30,13 +30,23 @@ struct ConnectionData {
 
 #[derive(Debug)]
 enum RegistrationStatus {
+    /// This is a new connection
     New,
+    /// The credentials are updated
     CredsUpdated,
+    /// The credentials are updated but the current connection is not forbidden
+    IgnoreCredsUpdated,
+    /// The credentials are the same, the endpoint is updated
     EndpointUpdated,
+    /// The credentials and the endpoint are the same, and the connection in healthy
     Running,
+    /// The credentials are the same, and the connection in forbidden
     Forbidden,
+    /// The account id is forbidden
     InvalidUuid,
+    /// The endpoint is forbidden
     InvalidEndpoint,
+    /// Another error occurred
     InternalError,
 }
 
@@ -51,7 +61,11 @@ impl From<RegistrationStatus> for String {
             RegistrationStatus::Forbidden => "forbidden",
             RegistrationStatus::InvalidUuid => "invalid_uuid",
             RegistrationStatus::InvalidEndpoint => "invalid_endpoint",
-            RegistrationStatus::InternalError => "internal_error",
+            // If someone tries to register new creds for an healthy connection,
+            // we return an internal_error.
+            RegistrationStatus::IgnoreCredsUpdated | RegistrationStatus::InternalError => {
+                "internal_error"
+            }
         }
         .into()
     }
@@ -118,44 +132,12 @@ fn discover() -> Json<ApiResponse> {
 #[post("/", format = "application/json", data = "<co_data>")]
 async fn register(co_data: Json<ConnectionData>) -> Json<ApiResponse> {
     let mut status = registration_status(&co_data).await;
+    // Any error will be turned into internal_error
     match status {
-        RegistrationStatus::New | RegistrationStatus::CredsUpdated => {
-            if new_connection(&co_data).is_ok() {
-                log::debug!("Connection succeeded");
-                ping_endpoint(&co_data).await;
-            } else {
-                log::debug!("Could not start new connection");
-                status = RegistrationStatus::InternalError;
-            }
-        }
+        RegistrationStatus::New => handle_new_connection(&co_data, true, false).await,
+        RegistrationStatus::CredsUpdated => handle_new_connection(&co_data, true, true).await,
         RegistrationStatus::EndpointUpdated => {
-            if new_connection(&co_data).is_ok() {
-                log::debug!("Connection succeeded");
-                if co_data.ping.unwrap_or(false) {
-                    ping_endpoint(&co_data).await;
-                }
-            } else {
-                log::debug!("Could not start new connection");
-                status = RegistrationStatus::InternalError;
-            }
-        }
-        RegistrationStatus::Forbidden => {
-            log::debug!("Connection is currently forbidden");
-            if let Ok(co) = DB.get(&co_data.uuid) {
-                if co.device_id != co_data.device_id || co.password != co_data.password {
-                    if new_connection(&co_data).is_ok() {
-                        log::debug!("Connection succeeded");
-                        status = RegistrationStatus::CredsUpdated;
-                        METRICS.forbiddens.dec();
-                    } else {
-                        log::debug!("Could not start new connection");
-                        status = RegistrationStatus::InternalError;
-                    }
-                }
-            } else {
-                log::debug!("Could not get info in DB about the connection");
-                status = RegistrationStatus::InternalError;
-            }
+            handle_new_connection(&co_data, co_data.ping.unwrap_or(false), false).await
         }
         RegistrationStatus::Running => {
             // If the connection is "Running" then the device creds still exists,
@@ -167,18 +149,48 @@ async fn register(co_data: Json<ConnectionData>) -> Json<ApiResponse> {
             if co_data.ping.unwrap_or(false) {
                 ping_endpoint(&co_data).await;
             }
+            Ok(())
         }
-        RegistrationStatus::InvalidEndpoint | RegistrationStatus::InvalidUuid => (),
+        RegistrationStatus::IgnoreCredsUpdated
+        | RegistrationStatus::Forbidden
+        | RegistrationStatus::InvalidEndpoint
+        | RegistrationStatus::InvalidUuid => Ok(()),
         _ => {
             log::debug!("Status unknown: {status:?}");
-            status = RegistrationStatus::InternalError;
+            Err(eyre::eyre!("Unknown status: {status:?}"))
         }
     }
+    .unwrap_or_else(|_| status = RegistrationStatus::InternalError);
+
     log::debug!("Status: {status:?}");
     gen_api_rep(HashMap::from([(
         String::from("status"),
         String::from(status),
     )]))
+}
+
+/**
+Add new a connection. Ping the endpoint if [ping],
+decrease forbidden connections in metrics if
+[dec_forbidden]
+*/
+async fn handle_new_connection(
+    co_data: &Json<ConnectionData>,
+    ping: bool,
+    dec_forbidden: bool,
+) -> Result<()> {
+    if new_connection(&co_data).is_ok() {
+        log::debug!("Connection successfully added.");
+        if ping {
+            ping_endpoint(&co_data).await;
+        }
+        if dec_forbidden {
+            METRICS.forbiddens.dec();
+        }
+    } else {
+        log::debug!("Could not start new connection");
+    }
+    Ok(())
 }
 
 fn new_connection(co_data: &Json<ConnectionData>) -> Result<()> {
@@ -233,7 +245,14 @@ async fn registration_status(co_data: &ConnectionData) -> RegistrationStatus {
             RegistrationStatus::Running
         }
     } else {
-        RegistrationStatus::CredsUpdated
+        // We return CredsUpdated only if the current connection is forbidden.
+        // So it is impossible for someone to update a healthy connection
+        // without the linked device password.
+        if co.forbidden {
+            RegistrationStatus::CredsUpdated
+        } else {
+            RegistrationStatus::IgnoreCredsUpdated
+        }
     }
 }
 
