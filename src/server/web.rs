@@ -28,46 +28,94 @@ struct ConnectionData {
     pub ping: Option<bool>,
 }
 
+/**
+Order of the status:
+1. If the connection is refused: [Refused]
+2. If this is a new connection: [New]
+3. If the credentials are updated: [CredsUpdated]
+4. If the connection is known and forbidden: [Forbidden]
+5. If the endpoint is updated: [EndpointUpdated]
+6. Else: [Running]
+
+If an error occured during the process: [InternalError]
+*/
 #[derive(Debug)]
 enum RegistrationStatus {
+    /// The connection is refused
+    Refused(RefusedStatus),
     /// This is a new connection
     New,
-    /// The credentials are updated
-    CredsUpdated,
-    /// The credentials are updated but the current connection is not forbidden
-    IgnoreCredsUpdated,
-    /// The credentials are the same, the endpoint is updated
+    /// The registration credentials are updated,
+    CredsUpdated(CredsUpdateStatus),
+    /// The credentials are the same, and the connection in forbidden
+    Forbidden,
+    /// The endpoint is updated
     EndpointUpdated,
     /// The credentials and the endpoint are the same, and the connection in healthy
     Running,
-    /// The credentials are the same, and the connection in forbidden
-    Forbidden,
-    /// The account id is forbidden
-    InvalidUuid,
-    /// The endpoint is forbidden
-    InvalidEndpoint,
-    /// Another error occurred
+    /// An error occurred
     InternalError,
 }
 
 // This is used to send the reponse to Molly
 impl From<RegistrationStatus> for String {
-    fn from(r: RegistrationStatus) -> Self {
-        match r {
+    fn from(s: RegistrationStatus) -> Self {
+        match s {
+            RegistrationStatus::Refused(s) => s.into(),
             RegistrationStatus::New
-            | RegistrationStatus::CredsUpdated
             | RegistrationStatus::EndpointUpdated
             | RegistrationStatus::Running => "ok",
+            RegistrationStatus::CredsUpdated(s) => s.into(),
             RegistrationStatus::Forbidden => "forbidden",
-            RegistrationStatus::InvalidUuid => "invalid_uuid",
-            RegistrationStatus::InvalidEndpoint => "invalid_endpoint",
-            // If someone tries to register new creds for an healthy connection,
-            // we return an internal_error.
-            RegistrationStatus::IgnoreCredsUpdated | RegistrationStatus::InternalError => {
-                "internal_error"
-            }
+            RegistrationStatus::InternalError => "internal_error",
         }
         .into()
+    }
+}
+
+/**
+Order of the status:
+1. If UUID is forbidden [InvalidUuid]
+2. If endpoint is forbidden [InvalidEndpoint]
+*/
+#[derive(Debug)]
+enum RefusedStatus {
+    /// The account id is forbidden
+    InvalidUuid,
+    /// The endpoint is forbidden
+    InvalidEndpoint,
+}
+
+impl Into<&str> for RefusedStatus {
+    fn into(self) -> &'static str {
+        match &self {
+            RefusedStatus::InvalidUuid => "invalid_uuid",
+            RefusedStatus::InvalidEndpoint => "invalid_endpoint",
+        }
+    }
+}
+
+/**
+Order of the status:
+1. If the current connection is healthy [Ignore]
+2. Else [Ok]
+*/
+#[derive(Debug)]
+enum CredsUpdateStatus {
+    /// The credentials are updated but the current connection is not forbidden
+    Ignore,
+    /// The credentials are updated
+    Ok,
+}
+
+impl Into<&str> for CredsUpdateStatus {
+    fn into(self) -> &'static str {
+        match &self {
+            CredsUpdateStatus::Ok => "ok",
+            // If someone tries to register new creds for an healthy connection,
+            // we return an internal_error.
+            CredsUpdateStatus::Ignore => "internal_error",
+        }
     }
 }
 
@@ -135,7 +183,9 @@ async fn register(co_data: Json<ConnectionData>) -> Json<ApiResponse> {
     // Any error will be turned into internal_error
     match status {
         RegistrationStatus::New => handle_new_connection(&co_data, true, false).await,
-        RegistrationStatus::CredsUpdated => handle_new_connection(&co_data, true, true).await,
+        RegistrationStatus::CredsUpdated(CredsUpdateStatus::Ok) => {
+            handle_new_connection(&co_data, true, true).await
+        }
         RegistrationStatus::EndpointUpdated => {
             handle_new_connection(&co_data, co_data.ping.unwrap_or(false), false).await
         }
@@ -151,14 +201,8 @@ async fn register(co_data: Json<ConnectionData>) -> Json<ApiResponse> {
             }
             Ok(())
         }
-        RegistrationStatus::IgnoreCredsUpdated
-        | RegistrationStatus::Forbidden
-        | RegistrationStatus::InvalidEndpoint
-        | RegistrationStatus::InvalidUuid => Ok(()),
-        _ => {
-            log::debug!("Status unknown: {status:?}");
-            Err(eyre::eyre!("Unknown status: {status:?}"))
-        }
+        // Else, do nothing
+        _ => Ok(()),
     }
     .unwrap_or_else(|_| status = RegistrationStatus::InternalError);
 
@@ -221,11 +265,11 @@ async fn registration_status(co_data: &ConnectionData) -> RegistrationStatus {
     let uuid_valid = config::is_uuid_valid(&co_data.uuid);
 
     if !uuid_valid {
-        return RegistrationStatus::InvalidUuid;
+        return RegistrationStatus::Refused(RefusedStatus::InvalidUuid);
     }
 
     if !endpoint_valid {
-        return RegistrationStatus::InvalidEndpoint;
+        return RegistrationStatus::Refused(RefusedStatus::InvalidEndpoint);
     }
 
     let co = match DB.get(&co_data.uuid) {
@@ -249,9 +293,9 @@ async fn registration_status(co_data: &ConnectionData) -> RegistrationStatus {
         // So it is impossible for someone to update a healthy connection
         // without the linked device password.
         if co.forbidden {
-            RegistrationStatus::CredsUpdated
+            RegistrationStatus::CredsUpdated(CredsUpdateStatus::Ok)
         } else {
-            RegistrationStatus::IgnoreCredsUpdated
+            RegistrationStatus::CredsUpdated(CredsUpdateStatus::Ignore)
         }
     }
 }
