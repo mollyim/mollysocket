@@ -70,10 +70,18 @@ To generate a new key, you can run this command `mollysocket vapid gen`. Or usin
 
 This value can be passed to mollysocket via a file, location given with `vapid_key_file` parameter, or directly in the `vapid_privkey` parameter. _The key file takes the precedence_.
 
-To pass this value to mollysocket, you may wish to use [systemd-creds](https://systemd.io/CREDENTIALS/):
+#### If you want to use systemd-creds
+
+To pass this value to mollysocket, you may wish to use [systemd-creds](https://systemd.io/CREDENTIALS/). This allows you to store securely the VAPID key.
+
+If you have installed your systemd service in [user mode](https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html#Unit%20File%20Load%20Path), adds `--user` to systemd-creds commands.
 
 ```console
-$ mollysocket vapid gen | systemd-creds encrypt --name=ms_vapid -p - -
+$ # Service installed in user mode:
+$ # mollysocket vapid gen | systemd-creds --user encrypt --name=ms_vapid -p - -
+$
+# # Service installed in system mode:
+# mollysocket vapid gen | systemd-creds encrypt --name=ms_vapid -p - -
 SetCredentialEncrypted=ms_vapid: \
         k6iUCUh0RJCQyvL8k8q1UyAAAAABAAAADAAAABAAAAC1lFmbWAqWZ8dCCQkAAAAAgAAAA \
         AAAAAALACMA0AAAACAAAAAAfgAg9uNpGmj8LL2nHE0ixcycvM3XkpOCaf+9rwGscwmqRJ \

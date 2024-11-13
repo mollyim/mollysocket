@@ -49,7 +49,7 @@ Download the [systemd unit file](https://github.com/mollyim/mollysocket/raw/main
 You can use [systemd-creds](https://systemd.io/CREDENTIALS/) to encrypt the vapid key:
 
 ```console
-$ mollysocket vapid gen | systemd-creds encrypt --name=ms_vapid -p - -
+# mollysocket vapid gen | systemd-creds encrypt --name=ms_vapid -p - -
 SetCredentialEncrypted=ms_vapid: \
         k6iUCUh0RJCQyvL8k8q1UyAAAAABAAAADAAAABAAAAC1lFmbWAqWZ8dCCQkAAAAAgAAAA \
         AAAAAALACMA0AAAACAAAAAAfgAg9uNpGmj8LL2nHE0ixcycvM3XkpOCaf+9rwGscwmqRJ \
