@@ -85,7 +85,7 @@ pub fn get_index(airgapped: bool, ms_url: Option<&str>) -> String {
 }
 
 fn no_vapid() -> String {
-    index!("<p>VAPID Key not found. Configure a VAPID key and try again.</p>")
+    index!("<p>VAPID Key not found. <a href=\"https://github.com/mollyim/mollysocket?tab=readme-ov-file#vapid-key\">Configure a VAPID key and try again.</a></p>")
 }
 
 fn no_url() -> String {
