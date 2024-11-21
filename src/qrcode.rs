@@ -30,7 +30,7 @@ pub fn gen_url_airgapped() -> Result<Url> {
 pub fn url_to_printable_qr(url: &Url) -> String {
     let qr = QrCode::encode_text(&url.as_str(), QrCodeEcc::Low).unwrap();
     let mut result = String::new();
-    let border: i32 = 2;
+    let border: i32 = 4;
     for y in (-border..qr.size() + border).step_by(2) {
         for x in -border..qr.size() + border {
             let c: char = if qr.get_module(x, y) {
@@ -58,7 +58,7 @@ pub fn url_to_printable_qr(url: &Url) -> String {
 pub fn url_to_svg_qr(url: &Url) -> String {
     let qr = QrCode::encode_text(&url.as_str(), QrCodeEcc::Low).unwrap();
     let mut result = String::new();
-    let border: i32 = 2;
+    let border: i32 = 4;
     result += "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
     result += "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n";
     let dimension = qr
