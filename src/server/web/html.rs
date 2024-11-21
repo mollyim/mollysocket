@@ -64,8 +64,13 @@ pub fn get_index(airgapped: bool, ms_url: Option<&str>) -> String {
     if airgapped {
         index!(format!(
             r#"
-<p>{intro}<br><a id="ms-link" href="{url}">{url}</a></p>
+<p>⚠️<u>This will configure your server in air gapped mode</u>⚠️<br>
+Molly won't be able to update push information if necessary.<br>
+You can also keep a screenshot of this QR code in case you need to reconfigure your server without having access to it.<br><br>
+<p>{intro}</p>
+<a hidden id="ms-link" href="{url}">{url}</a>
 <div style="max-width: 25rem;">
+<span hidden id="ms_link" link="{url}" /></span>
 {qr}
 </div>
 <p><i>Wish to use <a href="?">with the webserver</a> ?</i></p>
@@ -74,7 +79,8 @@ pub fn get_index(airgapped: bool, ms_url: Option<&str>) -> String {
     } else {
         index!(format!(
             r#"
-<p>{intro}<br><a id="ms-link" href="{url}">{url}</a></p>
+<p>{intro}</p>
+<a hidden id="ms-link" href="{url}">{url}</a>
 <div style="max-width: 25rem;">
 {qr}
 </div>

@@ -4,8 +4,7 @@ use url::Url;
 
 use crate::vapid;
 
-pub const INTRO: &str =
-    "Scan the folowing QR code to link mollysocket, or enter the following link manually:";
+pub const INTRO: &str = "Scan the folowing QR code to link mollysocket:";
 
 /// Generate deep link to link mollysocket to molly with url
 pub fn gen_url(ms_url: &str) -> Result<Url> {
