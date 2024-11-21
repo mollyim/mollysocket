@@ -8,6 +8,14 @@ Environment="RUST_LOG=info"
 Environment="MOLLY_CONF=/opt/mollysocket/prod.toml"
 WorkingDirectory=/opt/mollysocket/
 
+# TODO: set VAPID key
+# Option 1, with systemd-creds
+# SetCredentialEncrypted=[...] output of `mollysocket vapid gen | systemd-creds encrypt --name=ms_vapid -p - -`
+# Environment=MOLLY_VAPID_KEY_FILE=%d/ms_vapid
+#
+# Option 2, key stored in plaintext
+# Environment=MOLLY_VAPID_PRIVKEY=[...] output of `mollysocket vapid gen`
+
 User=mollysocket
 Group=mollysocket
 UMask=0007

@@ -14,6 +14,8 @@ services:
       # Do not add space in the array ["http://a.tld","*"]
       - MOLLY_ALLOWED_ENDPOINTS=["*"]
       - MOLLY_ALLOWED_UUIDS=["*"]
+      # TODO:
+      #- MOLLY_VAPID_PRIVKEY="paste output of `docker compose mollysocket vapid gen` here"
       - MOLLY_HOST=0.0.0.0
       - MOLLY_PORT=8020
       - RUST_LOG=info

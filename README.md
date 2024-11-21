@@ -70,11 +70,15 @@ To generate a new key, you can run this command `mollysocket vapid gen`. Or usin
 
 This value can be passed to mollysocket via a file, location given with `vapid_key_file` parameter, or directly in the `vapid_privkey` parameter. _The key file takes the precedence_.
 
-#### If you want to use systemd-creds
+#### With docker-compose
 
-To pass this value to mollysocket, you may wish to use [systemd-creds](https://systemd.io/CREDENTIALS/). This allows you to store securely the VAPID key.
+The easiest way to pass the VAPID key when using docker compose is to pass it with the `MOLLY_VAPID_PRIVKEY` environment variable. See [docker-compose.yml](docker-compose.yml).
 
-If you have installed your systemd service in [user mode](https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html#Unit%20File%20Load%20Path), adds `--user` to systemd-creds commands.
+#### With a systemd service
+
+If you use a [systemd service](mollysocket.service) for MollySocket, you may wish to use [systemd-creds](https://systemd.io/CREDENTIALS/) to store securely the VAPID key.
+
+<sup>If you have installed your systemd service in [user mode](https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html#Unit%20File%20Load%20Path), adds `--user` to systemd-creds commands.</sup>
 
 ```console
 $ # Service installed in user mode:
@@ -105,7 +109,14 @@ SetCredentialEncrypted=ms_vapid: \
 Environment=MOLLY_VAPID_KEY_FILE=%d/ms_vapid
 ```
 
-#### `allowed_endpoints`
+Alternatively, you can store the VAPID key in cleartext in the systemd unit file:
+
+```ini
+[Service]
+Environment=MOLLY_VAPID_PRIVKEY=DSqYuWchrB6yIMYJtidvqANeRQic4uWy34afzZRsZnI
+```
+
+### `allowed_endpoints`
 
 These are the UnifiedPush endpoints that MollySocket may use to push notifications with. 
 
@@ -113,7 +124,7 @@ These are the UnifiedPush endpoints that MollySocket may use to push notificatio
 
 That's because, for security reasons, endpoints on your local network must be allowed explicitly. You just have to set the scheme (https), the domain and the port if required. For instance `allowed_endpoints=['https://push.mydomain.tld']`
 
-#### `allowed_uuids`
+### `allowed_uuids`
 
 You can allow registration for all accounts by setting `allowed_uuids` to `['*']`. Else set your account ids in the array: `['account_id1','account_id2']`.
 

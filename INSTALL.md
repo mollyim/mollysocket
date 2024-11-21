@@ -44,12 +44,12 @@ Download the [systemd unit file](https://github.com/mollyim/mollysocket/raw/main
 
 ### Add a VAPID key
 
-#### (Recommended) With systemd-creds
+#### Option 1. With systemd-creds (Recommended)
 
-You can use [systemd-creds](https://systemd.io/CREDENTIALS/) to encrypt the vapid key:
+You can use [systemd-creds](https://systemd.io/CREDENTIALS/) to encrypt the vapid key. Run the following command as _root_ to get the systemd-creds parameters:
 
 ```console
-# mollysocket vapid gen | systemd-creds encrypt --name=ms_vapid -p - -
+# sudo -u mollysocket mollysocket vapid gen | systemd-creds encrypt --name=ms_vapid -p - -
 SetCredentialEncrypted=ms_vapid: \
         k6iUCUh0RJCQyvL8k8q1UyAAAAABAAAADAAAABAAAAC1lFmbWAqWZ8dCCQkAAAAAgAAAA \
         AAAAAALACMA0AAAACAAAAAAfgAg9uNpGmj8LL2nHE0ixcycvM3XkpOCaf+9rwGscwmqRJ \
@@ -73,9 +73,16 @@ SetCredentialEncrypted=ms_vapid: \
 Environment=MOLLY_VAPID_KEY_FILE=%d/ms_vapid
 ```
 
-#### Plaintext
+#### Option 2. Plaintext
 
-It is also possible to pass this value in plaintext. Add the value of `mollysocket vapid gen` to an environment variable in your unit file:
+It is also possible to pass the value of the vapid key in plaintext to an environment variable in your unit file. Run the following command as _mollysocket_ user:
+
+```console
+$ mollysocket vapid gen
+DSqYuWchrB6yIMYJtidvqANeRQic4uWy34afzZRsZnI
+```
+
+And use the output of the command in your systemd unit file:
 
 ```ini
 [Service]
