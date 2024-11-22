@@ -73,7 +73,7 @@ You can also keep a screenshot of this QR code in case you need to reconfigure y
 <span hidden id="ms_link" link="{url}" /></span>
 {qr}
 </div>
-<p><i>Wish to use <a href="?">with the webserver</a> ?</i></p>
+<p><i>Wish to use <a href="?">with the webserver</a>?</i></p>
         "#,
         ))
     } else {
@@ -84,7 +84,7 @@ You can also keep a screenshot of this QR code in case you need to reconfigure y
 <div style="max-width: 25rem;">
 {qr}
 </div>
-<p><i>Wish to use in <a href="?airgapped">airgapped mode</a> ?</i></p>
+<p><i>Wish to use in <a href="?airgapped">airgapped mode</a>?</i></p>
         "#,
         ))
     }
