@@ -27,12 +27,12 @@ graph TD
 
 ## Setup
 
-1. You need the right flavor of Molly to use UnifiedPush: <https://github.com/mollyim/mollyim-android-unifiedpush>.
-2. You can install MollySocket via:
+1. You can install MollySocket via:
     1. Docker/Podman: `docker pull ghcr.io/mollyim/mollysocket:latest`
     2. Crates.io: `cargo install mollysocket` (see [INSTALL.md](INSTALL.md) for the setup) 
     3. Direct download: <https://github.com/mollyim/mollysocket/releases> (see [INSTALL.md](INSTALL.md) for the setup)
-3. A [distributor app](https://unifiedpush.org/users/distributors/) (easiest is [ntfy](https://f-droid.org/en/packages/io.heckel.ntfy/))
+2. A [distributor app](https://unifiedpush.org/users/distributors/) (easiest is [ntfy](https://f-droid.org/en/packages/io.heckel.ntfy/))
+3. Go to the Settings > Notifications, change the delivery method to _UnifiedPush_ and scan the QR code shown on your MollySocket homepage
 
 You can optionally install your own push server like ntfy or NextPush.
 For beginners, you can use a free service like ntfy.sh (do consider donating if you have the means).
