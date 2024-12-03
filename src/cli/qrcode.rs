@@ -27,5 +27,5 @@ pub fn qrcode(command: &QrcodeCommand) {
     }
     let url = url.unwrap();
     let qr_code = qrcode::url_to_printable_qr(&url);
-    println!("{}\n{}\n{}", qrcode::INTRO, url.to_string(), qr_code)
+    println!("{}\n{}", qrcode::INTRO, qr_code)
 }
