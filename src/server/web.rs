@@ -1,4 +1,4 @@
-use crate::{config, db::Connection, utils::ping};
+use crate::{config, db::Connection, qrcode, utils::ping, vapid};
 use eyre::Result;
 use html::get_index;
 use rocket::{
@@ -311,6 +311,7 @@ fn gen_api_rep(mut map: HashMap<String, String>) -> Json<ApiResponse> {
 pub async fn launch() {
     if !config::should_start_webserver() {
         log::warn!("The web server is disabled, making mollysocket run in an air gapped mode. With this clients are less easy to set up and push might break.");
+        log_qr_code();
         return;
     }
 
@@ -324,4 +325,18 @@ pub async fn launch() {
         .mount_metrics("/metrics", &METRICS)
         .launch()
         .await;
+}
+
+fn log_qr_code() {
+    match qrcode::gen_url_airgapped() {
+        Ok(url) => {
+            let qr_code = qrcode::url_to_printable_qr(&url);
+            log::warn!("Use the following QRcode: \n{}", qr_code);
+        }
+        Err(e) => {
+            if let Some(vapid::Error::VapidKeyError) = e.downcast_ref::<vapid::Error>() {
+                log::warn!("VAPID key not found. Configure a VAPID key: https://github.com/mollyim/mollysocket?tab=readme-ov-file#vapid-key")
+            }
+        }
+    }
 }
