@@ -216,6 +216,41 @@ If you don't receive a test notification, then your MollySocket server can't rea
 
 You can get further troubleshooting information on this page: <https://unifiedpush.org/users/troubleshooting/>.
 
+* **How to backup VAPID key**
+
+MollySocket is designed for self-hoster, and the idea is to renew the VAPID key if you have to reinstall MollySocket somewhere else. If you are asking for this, you are probably trying to use systemd-creds, else you'd have the VAPID private key in plain text.
+
+If you haven't generated the VAPID key yet, just pipe the command to a temporary file: `mollysocket vapid gen | tee key.tmp | systemd-creds encrypt --name=ms_vapid -p - -`, key.tmp will contain the key, you can store it in a safe and remove the file.
+
+If you have already generated the key, and want to back up this key, you can retrieve it this way: First, copy the content of `SetCredentialEncrypted` to a file `ms_vapid`. Then use systemd-creds to decrypt it. You can then store it in a safe.
+
+```console
+# cat cipher.cred
+k6iUCUh0RJCQyvL8k8q1UyAAAAABAAAADAAAABAAAAC1lFmbWAqWZ8dCCQkAAAAAgAAAA
+AAAAAALACMA0AAAACAAAAAAfgAg9uNpGmj8LL2nHE0ixcycvM3XkpOCaf+9rwGscwmqRJ
+cAEO24kB08FMtd/hfkZBX8PqoHd/yPTzRxJQBoBsvo9VqolKdy9Wkvih0HQnQ6NkTKEdP
+HQ08+x8sv5sr+Mkv4ubp3YT1Jvv7CIPCbNhFtag1n5y9J7bTOKt2SQwBOAAgACwAAABIA
+ID8H3RbsT7rIBH02CIgm/Gv1ukSXO3DMHmVQkDG0wEciABAAII6LvrmL60uEZcp5qnEkx
+SuhUjsDoXrJs0rfSWX4QAx5PwfdFuxPusgE==
+# systemd-creds decrypt ms_vapid
+DSqYuWchrB6yIMYJtidvqANeRQic4uWy34afzZRsZnI
+```
+
+* **On MollySocket webpage, I see a alert saying the origin or the Pathname isn't correct**
+
+You are using MollySocket behind a reverse proxy and the URL received by MollySocket doesn't match the one you are using in your web browser.
+
+You need to pass the original Host and the original URL to MollySocket with the `Host` and the `X-Original-URL` header. For instance, the Nginx config looks like this:
+
+```nginx
+    location /molly/ {
+        proxy_pass http://127.0.0.1:8020/;
+        proxy_set_header            Host $host;
+        proxy_set_header X-Original-URL $uri;
+    }
+
+```
+
 ## About security
 
 **Relative to Signal security**
