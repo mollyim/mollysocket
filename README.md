@@ -66,7 +66,7 @@ The configuration file uses the [TOML format](https://toml.io/). Below is an ove
 
 VAPID key is used to authorize mollysocket server to send requests to your push server, if it supports it.
 
-To generate a new key, you can run this command `mollysocket vapid gen`. Or using docker, `docker-compose run mollysocket vapid gen`.
+To generate a new key, you can run this command `mollysocket vapid gen`. Or using docker, `docker compose run mollysocket vapid gen`.
 
 This value can be passed to mollysocket via a file, location given with `vapid_key_file` parameter, or directly in the `vapid_privkey` parameter. _The key file takes the precedence_.
 
