@@ -101,7 +101,17 @@ You will need to proxy everything from `/` to `http://127.0.0.1:8020/` (8020 is 
 
 ## (Option B) Air gapped mode
 
-You will have to switch on *air gapped mode* on Molly (Android). It will have a command to copy to run on your server. You must run this command as user `mollysocket` with `MOLLY_CONF=/opt/mollysocket/prod.toml`.
+If you can use port-forwarding through SSH to your server, then run the following command: `ssh -L 8020:localhost:8020 your_server`, then open http://localhost:8020 on your machine. You can ignore alerts if there are any. Then click on _airgapped mode_.
+
+If you can't use port-forwarding, change `webserver` to `false` in your config file (_/opt/mollysocket/prod.toml_) and restart your service:
+
+```console
+# systemctl restart mollysocket
+# journalctl -u mollysocket
+# # This should show a QR code
+```
+
+After scanning the QR code, you will have a command to copy to run on your server. You must run this command as user `mollysocket` with `MOLLY_CONF=/opt/mollysocket/prod.toml`.
 
 For instance `sudo -su mollysocket MOLLY_CONF=/opt/mollysocket/prod.toml /opt/mollysocket/ms connection add baab32b9-d60b-4c39-9e14-15d8f6e1527e 2 thisisrandom 'https://push.mydomain.tld/upthisisrandom?up'`.
 
