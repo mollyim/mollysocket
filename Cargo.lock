@@ -1201,7 +1201,7 @@ dependencies = [
 
 [[package]]
 name = "mollysocket"
-version = "1.5.3"
+version = "1.5.4"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
