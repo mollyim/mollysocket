@@ -1,5 +1,4 @@
 use std::{
-    collections::BTreeMap,
     fmt::{Display, Formatter},
     ops::Add,
     time::{Duration, SystemTime, UNIX_EPOCH},
@@ -16,6 +15,7 @@ use openssl::{
     nid::Nid,
     pkey::{PKey, Private},
 };
+use rocket::serde::json;
 
 use crate::config;
 
@@ -65,16 +65,16 @@ fn gen_vapid_header_with_key(origin: url::Origin, key: &SignerWithPubKey) -> Res
         algorithm: AlgorithmType::Es256,
         ..Default::default()
     };
-    let mut claims = BTreeMap::new();
-    claims.insert("aud", &origin_str);
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
         // from_hours is still unstable https://github.com/rust-lang/rust/issues/120301
         .add(Duration::from_secs(86400 /* 24h */))
-        .as_secs()
-        .to_string();
-    claims.insert("exp", &now);
+        .as_secs();
+    let claims = json::json!({
+        "aud": origin_str,
+        "exp": now
+    });
     let token = Token::new(header, claims)
         .sign_with_key(&key.signer)
         .unwrap();
