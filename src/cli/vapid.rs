@@ -29,7 +29,7 @@ fn print_vapid_for_endpoint(endpoint: &str) {
     let origin = url::Url::parse(endpoint)
         .expect(&format!("Could not parse {}.", endpoint))
         .origin();
-    let header = match vapid::gen_vapid_header(origin) {
+    let header = match vapid::get_vapid_header(origin) {
         Err(e) if matches!(e.downcast_ref(), Some(vapid::Error::VapidKeyError)) => {
             println!("{}", e);
             return;

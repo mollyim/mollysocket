@@ -1,7 +1,9 @@
 use std::{
+    collections::HashMap,
     fmt::{Display, Formatter},
     ops::Add,
-    time::{Duration, SystemTime, UNIX_EPOCH},
+    sync::{Arc, Mutex},
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
@@ -21,7 +23,12 @@ use crate::config;
 
 lazy_static! {
     static ref KEY: Option<SignerWithPubKey> = get_signer_from_conf().ok();
+    /** Cache of VAPID keys */
+    static ref VAPID_CACHE: Arc<Mutex<HashMap<String, VapidCache>>> = Arc::new(Mutex::new(HashMap::new()));
 }
+
+const DURATION_VAPID: u64 = 4500; /* 1h15 */
+const DURATION_VAPID_CACHE: u64 = 3600; /* 1h */
 
 /**
 Wrapper containing the signer and the associated public key.
@@ -29,6 +36,11 @@ Wrapper containing the signer and the associated public key.
 struct SignerWithPubKey {
     signer: PKeyWithDigest<Private>,
     pubkey: String,
+}
+
+struct VapidCache {
+    header: String,
+    expire: Instant,
 }
 
 #[derive(Debug)]
@@ -53,9 +65,43 @@ pub fn get_vapid_pubkey() -> Result<&'static str> {
 /**
 Generate VAPID header for origin.
 */
-pub fn gen_vapid_header(origin: url::Origin) -> Result<String> {
+pub fn get_vapid_header(origin: url::Origin) -> Result<String> {
     let key = KEY.as_ref().ok_or(Error::VapidKeyError)?;
+    if let Some(h) = get_vapid_header_from_cache(&origin) {
+        return Ok(h);
+    }
     gen_vapid_header_with_key(origin, key)
+}
+
+/**
+Get VAPID header from cache if not expire
+*/
+fn get_vapid_header_from_cache(origin: &url::Origin) -> Option<String> {
+    let origin_str = origin.unicode_serialization();
+    let now = Instant::now();
+    let cache = VAPID_CACHE.lock().unwrap();
+    if let Some(c) = cache.get(&origin_str) {
+        if c.expire > now {
+            log::debug!("Found VAPID from cache");
+            Some(c.header.clone())
+        } else {
+            log::debug!("VAPID from cache has expired");
+            None
+        }
+    } else {
+        None
+    }
+}
+
+fn add_vapid_header_to_cache(origin_str: &str, header: &str) {
+    let mut cache = VAPID_CACHE.lock().unwrap();
+    cache.insert(
+        origin_str.into(),
+        VapidCache {
+            header: header.into(),
+            expire: Instant::now().add(Duration::from_secs(DURATION_VAPID_CACHE)),
+        },
+    );
 }
 
 fn gen_vapid_header_with_key(origin: url::Origin, key: &SignerWithPubKey) -> Result<String> {
@@ -69,7 +115,7 @@ fn gen_vapid_header_with_key(origin: url::Origin, key: &SignerWithPubKey) -> Res
         .duration_since(UNIX_EPOCH)
         .unwrap()
         // from_hours is still unstable https://github.com/rust-lang/rust/issues/120301
-        .add(Duration::from_secs(86400 /* 24h */))
+        .add(Duration::from_secs(DURATION_VAPID))
         .as_secs();
     let claims = json::json!({
         "aud": origin_str,
@@ -78,7 +124,10 @@ fn gen_vapid_header_with_key(origin: url::Origin, key: &SignerWithPubKey) -> Res
     let token = Token::new(header, claims)
         .sign_with_key(&key.signer)
         .unwrap();
-    Ok(format!("vapid t={},k={}", token.as_str(), &key.pubkey))
+
+    let header = format!("vapid t={},k={}", token.as_str(), &key.pubkey);
+    add_vapid_header_to_cache(&origin_str, &header);
+    Ok(header)
 }
 
 /**
