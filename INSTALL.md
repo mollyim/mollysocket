@@ -99,11 +99,27 @@ You can enable it `systemctl enable --now mollysocket`, the service is now activ
 
 You will need to proxy everything from `/` to `http://127.0.0.1:8020/` (8020 is the value define in the systemd unit file for `$ROCKET_PORT`, it can be changed if needed).
 
+You also need to forward the `Host` header.
+
+If you proxy from another path like `/molly/` instead of `/`, you also need to pass the original URL.
+
+For Nginx, it looks like:
+
+```
+    location / {
+        proxy_pass http://127.0.0.1:8020/;
+        proxy_set_header            Host $host;
+        proxy_set_header X-Original-URL $uri;
+    }
+```
+
 ## (Option B) Air gapped mode
 
-If you can use port-forwarding through SSH to your server, then run the following command: `ssh -L 8020:localhost:8020 your_server`, then open http://localhost:8020 on your machine. You can ignore alerts if there are any. Then click on _airgapped mode_.
+To find the MollySocket QR code:
 
-If you can't use port-forwarding, change `webserver` to `false` in your config file (_/opt/mollysocket/prod.toml_) and restart your service:
+- If you can use port-forwarding through SSH to your server, then run the following command: `ssh -L 8020:localhost:8020 your_server`, then open http://localhost:8020 on your machine. You can ignore alerts if there are any. Then click on _airgapped mode_.
+
+- If you can't use port-forwarding, change `webserver` to `false` in your config file (_/opt/mollysocket/prod.toml_) and restart your service:
 
 ```console
 # systemctl restart mollysocket
