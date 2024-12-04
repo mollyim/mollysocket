@@ -179,7 +179,8 @@ You are using MollySocket behind a reverse proxy and the URL received by MollySo
 You need to pass the original Host and the original URL to MollySocket with the `Host` and the `X-Original-URL` header. For instance, the Nginx config looks like this:
 
 ```nginx
-    location /molly/ {
+    # change to /molly/ if you don't expose it on the root of your domain
+    location / {
         proxy_pass http://127.0.0.1:8020/;
         proxy_set_header            Host $host;
         proxy_set_header X-Original-URL $uri;
