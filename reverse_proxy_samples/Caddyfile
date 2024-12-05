@@ -1,0 +1,29 @@
+{
+    auto_https disable_redirects
+
+    servers {
+      metrics
+    }
+}
+
+(upgrade) {
+    @upgradable {
+        header Upgrade-Insecure-Requests 1
+        protocol http
+    }
+
+    redir @upgradable https://{host}{uri} 308
+
+}
+
+# Caddy pass the request `Host` header by default
+molly.domain.tld {
+	reverse_proxy 127.0.0.1:8020
+}
+
+# # If you need to set on another path
+# www.domain.tld {
+# 	reverse_proxy /molly/ 127.0.0.1:8020 {
+# 		header_up X-Original-URL "/molly/"
+# 	}
+# }
