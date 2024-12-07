@@ -187,8 +187,8 @@ fn get_signer(private_bytes: &str) -> Result<SignerWithPubKey> {
 Generate a new VAPID key.
 */
 pub fn gen_vapid_key() -> String {
-    let key = PKey::ec_gen("P-256").unwrap();
-    URL_SAFE_NO_PAD.encode(key.ec_key().unwrap().private_key().to_vec())
+    let key = EcKey::generate(&EcGroup::from_curve_name(Nid::X9_62_PRIME256V1).unwrap());
+    URL_SAFE_NO_PAD.encode(key.unwrap().private_key().to_vec())
 }
 
 #[cfg(test)]
