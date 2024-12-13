@@ -3,21 +3,21 @@ use std::{
     fmt::{Display, Formatter},
     ops::Add,
     sync::{Arc, Mutex},
-    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
+    time::{Duration, Instant},
 };
 
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use eyre::{eyre, Result};
-use jwt::{header::HeaderType, AlgorithmType, Header, PKeyWithDigest, SignWithKey, Token};
+use jwt_simple::{
+    self,
+    algorithms::{ECDSAP256KeyPairLike, ECDSAP256PublicKeyLike, ES256KeyPair},
+    claims::Claims,
+};
 use lazy_static::lazy_static;
 use openssl::{
-    bn::BigNum,
-    ec::{EcGroup, EcKey, EcPoint, PointConversionForm},
-    hash::MessageDigest,
+    ec::{EcGroup, EcKey},
     nid::Nid,
-    pkey::{PKey, Private},
 };
-use rocket::serde::json;
 
 use crate::config;
 
@@ -34,7 +34,7 @@ const DURATION_VAPID_CACHE: u64 = 3600; /* 1h */
 Wrapper containing the signer and the associated public key.
 */
 struct SignerWithPubKey {
-    signer: PKeyWithDigest<Private>,
+    signer: ES256KeyPair,
     pubkey: String,
 }
 
@@ -106,24 +106,9 @@ fn add_vapid_header_to_cache(origin_str: &str, header: &str) {
 
 fn gen_vapid_header_with_key(origin: url::Origin, key: &SignerWithPubKey) -> Result<String> {
     let origin_str = origin.unicode_serialization();
-    let header = Header {
-        type_: Some(HeaderType::JsonWebToken),
-        algorithm: AlgorithmType::Es256,
-        ..Default::default()
-    };
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        // from_hours is still unstable https://github.com/rust-lang/rust/issues/120301
-        .add(Duration::from_secs(DURATION_VAPID))
-        .as_secs();
-    let claims = json::json!({
-        "aud": origin_str,
-        "exp": now
-    });
-    let token = Token::new(header, claims)
-        .sign_with_key(&key.signer)
-        .unwrap();
+    let claims = Claims::create(jwt_simple::prelude::Duration::from_secs(DURATION_VAPID))
+        .with_audience(&origin_str);
+    let token = key.signer.sign(claims).unwrap();
 
     let header = format!("vapid t={},k={}", token.as_str(), &key.pubkey);
     add_vapid_header_to_cache(&origin_str, &header);
@@ -145,8 +130,7 @@ Get [SignerWithPubKey] from the private key.
 */
 fn get_signer(private_bytes: &str) -> Result<SignerWithPubKey> {
     let private_key_bytes = URL_SAFE_NO_PAD.decode(private_bytes).unwrap();
-    let private_key_bn = BigNum::from_slice(&private_key_bytes).unwrap();
-    let size = private_key_bn.num_bytes();
+    let size = private_key_bytes.len();
     if size != 32 {
         if size == 0 {
             log::warn!("No VAPID key was provided.")
@@ -158,29 +142,11 @@ fn get_signer(private_bytes: &str) -> Result<SignerWithPubKey> {
         }
         return Err(eyre!(Error::VapidKeyError));
     }
-    let group = EcGroup::from_curve_name(Nid::X9_62_PRIME256V1).unwrap();
-    let mut ctx = openssl::bn::BigNumContext::new().unwrap();
-    let mut public_key_point = EcPoint::new(&group).unwrap();
-    public_key_point
-        .mul_generator(&group, &private_key_bn, &mut ctx)
-        .unwrap();
-    let ec_key =
-        EcKey::from_private_components(&group, &private_key_bn, &public_key_point).unwrap();
-    let public_key_bytes = ec_key
-        .public_key()
-        .to_bytes(&group, PointConversionForm::UNCOMPRESSED, &mut ctx)
-        .unwrap();
-    let pubkey = URL_SAFE_NO_PAD.encode(public_key_bytes);
+    let kp = ES256KeyPair::from_bytes(&private_key_bytes).unwrap();
+    let pubkey = URL_SAFE_NO_PAD.encode(kp.public_key().public_key().to_bytes_uncompressed());
 
     log::info!("VAPID public key: {:?}", pubkey);
-    let key = PKey::from_ec_key(ec_key).unwrap();
-    Ok(SignerWithPubKey {
-        signer: PKeyWithDigest {
-            digest: MessageDigest::sha256(),
-            key,
-        },
-        pubkey,
-    })
+    Ok(SignerWithPubKey { signer: kp, pubkey })
 }
 
 /**
@@ -232,9 +198,9 @@ mod tests {
     #[test]
     fn test_vapid_other_tool() {
         let signer = get_signer(&gen_vapid_key()).unwrap();
-        let pubkey = signer.signer.key.public_key_to_pem().unwrap();
+        let pubkey = signer.signer.public_key().to_pem().unwrap();
         let url = url::Url::parse("https://example.tld").unwrap();
-        println!("PUB: \n{}", String::from_utf8(pubkey).unwrap());
+        println!("PUB: \n{}", pubkey);
         println!(
             "header: {}",
             gen_vapid_header_with_key(url.origin(), &signer).unwrap()

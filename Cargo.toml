@@ -46,8 +46,8 @@ directories = "5.0.1"
 regex = "1.11.0"
 qrcodegen = "1.8.0"
 base64 = "0.22.1"
-jwt = { version = "0.16.0", features = ["openssl"] }
 openssl = "0.10.68"
+jwt-simple = { version = "0.12.11", default-features = false, features = ["pure-rust"] }
 
 # [build-dependencies]
 # prost-build = { version = "0.12" }
