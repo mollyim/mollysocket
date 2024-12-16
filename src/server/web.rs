@@ -331,11 +331,11 @@ fn log_qr_code() {
     match qrcode::gen_url_airgapped() {
         Ok(url) => {
             let qr_code = qrcode::url_to_printable_qr(&url);
-            log::warn!("Use the following QRcode: \n{}", qr_code);
+            log::error!("Use the following QRcode: \n{}", qr_code);
         }
         Err(e) => {
             if let Some(vapid::Error::VapidKeyError) = e.downcast_ref::<vapid::Error>() {
-                log::warn!("VAPID key not found. Configure a VAPID key: https://github.com/mollyim/mollysocket?tab=readme-ov-file#vapid-key")
+                log::error!("VAPID key not found. Configure a VAPID key: https://github.com/mollyim/mollysocket?tab=readme-ov-file#vapid-key")
             }
         }
     }
