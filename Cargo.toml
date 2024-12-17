@@ -1,6 +1,6 @@
 [package]
 name = "mollysocket"
-version = "1.5.4"
+version = "1.5.5"
 edition = "2021"
 license = "AGPL-3.0-or-later"
 authors = ["S1m"]
