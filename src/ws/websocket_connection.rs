@@ -93,7 +93,7 @@ pub trait WebSocketConnection {
 
     async fn handle_message(&self, message: tungstenite::Message) {
         let data = message.into_data();
-        let ws_message = match WebSocketMessage::decode(&data[..]) {
+        let ws_message = match WebSocketMessage::decode(data.as_slice()) {
             Ok(msg) => msg,
             Err(e) => {
                 log::error!("Failed to decode protobuf: {}", e);

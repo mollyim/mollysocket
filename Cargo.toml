@@ -23,27 +23,27 @@ async-trait = "0.1.83"
 env_logger = "0.11.5"
 futures-channel = "0.3"
 futures-util = "0.3"
-http = "1.1.0"
+http = "1.2.0"
 # until https://github.com/rust-lang/rust/issues/27709 is merged
 ip_rfc = "0.1.0"
 lazy_static = "1.5.0"
 log = "0.4.22"
 native-tls = "0.2.12"
 prost = "0.13"
-reqwest = { version = "0.12.8", features = ["json"]}
-serde = { version = "1.0.210", features = ["derive"]}
-tokio-tungstenite = { version = "0.24.0", features = ["native-tls", "url"] }
+reqwest = { version = "0.12.9", features = ["json"]}
+serde = { version = "1.0.216", features = ["derive"]}
+tokio-tungstenite = { version = "0.25.0", features = ["native-tls", "url"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
-url = "2.5.2"
+url = "2.5.4"
 rusqlite = "0.32.1"
 rocket = { version = "0.5.1", features = ["json"]}
 rocket_prometheus = "0.10.1"
 trust-dns-resolver = { version = "0.23.2", features = ["tokio-runtime"]}
 eyre = "0.6.12"
-clap = {version = "4.5.20", features = ["derive"]}
+clap = {version = "4.5.23", features = ["derive"]}
 figment = { version = "0.10.19", features = ["toml", "env"] }
 directories = "5.0.1"
-regex = "1.11.0"
+regex = "1.11.1"
 qrcodegen = "1.8.0"
 base64 = "0.22.1"
 openssl = "0.10.68"
