@@ -56,7 +56,7 @@ jobs:
       - name: Set Up containerd image store
         shell: bash
         run: |
-          cat /etc/docker/daemon.json | jq '. | .+{"features": {"containerd-snapshotter": true}}' | sudo tee /etc/docker/daemon.json
+          ( cat /etc/docker/daemon.json || echo '{}' ) | jq '. | .+{"features": {"containerd-snapshotter": true}}' | sudo tee /etc/docker/daemon.json
           sudo systemctl restart docker
 
       - name: Login to GitHub Container Registry
