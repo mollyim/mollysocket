@@ -107,7 +107,8 @@ fn add_vapid_header_to_cache(origin_str: &str, header: &str) {
 fn gen_vapid_header_with_key(origin: url::Origin, key: &SignerWithPubKey) -> Result<String> {
     let origin_str = origin.unicode_serialization();
     let claims = Claims::create(jwt_simple::prelude::Duration::from_secs(DURATION_VAPID))
-        .with_audience(&origin_str);
+        .with_audience(&origin_str)
+        .with_subject("https://github.com/mollyim/mollysocket");
     let token = key.signer.sign(claims).unwrap();
 
     let header = format!("vapid t={},k={}", token.as_str(), &key.pubkey);
