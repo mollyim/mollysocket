@@ -17,12 +17,12 @@ graph TD
         D[fa:fa-tower-broadcast Distributor App]
         MA[fa:fa-tablets Molly Android]
     end
-    MS -- 1. Persistent connection --> S
-    MS -- 2. 'Notifications present' --> P
-    P -- 3. 'Notications present for Molly' --> D
-    D -- 4. 'Check Signal servers' --> MA
-    MA -- 5. 'Got messages?' --> S
-    S -- 6. Messages --> MA
+    MS -- #8203;1. Persistent connection --> S
+    MS -- #8203;2. 'Notifications present' --> P
+    P -- #8203;3. 'Notifications present for Molly' --> D
+    D -- #8203;4. 'Check Signal servers' --> MA
+    MA -- #8203;5. 'Got messages?' --> S
+    S -- #8203;6. Messages --> MA
 ```
 
 ## Setup
