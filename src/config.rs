@@ -81,8 +81,8 @@ pub fn get_vapid_privkey() -> Option<&'static str> {
     get_cfg().vapid_privkey.as_deref()
 }
 
-pub fn get_ws_endpoint(uuid: &str, devide_id: u32, password: &str) -> String {
-    get_cfg().get_ws_endpoint(uuid, devide_id, password)
+pub fn get_ws_endpoint() -> &'static str {
+    get_cfg().get_ws_endpoint()
 }
 
 pub async fn is_endpoint_valid(url: &str) -> bool {
@@ -223,18 +223,10 @@ You may want to add \"{}\" to allowed_endpoints",
         }
     }
 
-    fn get_ws_endpoint(&self, uuid: &str, devide_id: u32, password: &str) -> String {
+    fn get_ws_endpoint(&self) -> &'static str {
         match self.signal_env {
-            SignalEnvironment::Production => format!(
-                "wss://chat.signal.org/v1/websocket/?login={}.{}&password={}",
-                uuid, devide_id, password
-            ),
-            SignalEnvironment::Staging => {
-                format!(
-                    "wss://chat.staging.signal.org/v1/websocket/?login={}.{}&password={}",
-                    uuid, devide_id, password
-                )
-            }
+            SignalEnvironment::Production => "wss://chat.signal.org/v1/websocket/",
+            SignalEnvironment::Staging => "wss://chat.staging.signal.org/v1/websocket/",
         }
     }
     async fn is_url_endpoint_valid(&self, url: &url::Url) -> EndpointValidity {

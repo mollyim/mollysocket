@@ -19,7 +19,7 @@ use super::{
         WebSocketResponseMessage,
     },
 };
-use crate::utils::post_allowed::post_allowed;
+use crate::{config, utils::post_allowed::post_allowed};
 
 const PUSH_TIMEOUT: Duration = Duration::from_secs(1);
 
@@ -44,7 +44,7 @@ impl Channels {
 
 #[derive(Debug)]
 pub struct SignalWebSocket {
-    connect_addr: url::Url,
+    creds: String,
     push_endpoint: url::Url,
     pub channels: Channels,
     push_instant: Arc<Mutex<Instant>>,
@@ -53,8 +53,12 @@ pub struct SignalWebSocket {
 
 #[async_trait(?Send)]
 impl WebSocketConnection for SignalWebSocket {
-    fn get_url(&self) -> &url::Url {
-        &self.connect_addr
+    fn get_url(&self) -> &str {
+        &config::get_ws_endpoint()
+    }
+
+    fn get_creds(&self) -> &str {
+        &self.creds
     }
 
     fn get_websocket_tx(&self) -> &Option<mpsc::UnboundedSender<tungstenite::Message>> {
@@ -83,11 +87,15 @@ impl WebSocketConnection for SignalWebSocket {
 }
 
 impl SignalWebSocket {
-    pub fn new(connect_addr: String, push_endpoint: String) -> Result<Self> {
-        let connect_addr = url::Url::parse(&connect_addr)?;
+    pub fn new<'a, 'b: 'a>(
+        uuid: &str,
+        device_id: u32,
+        password: &str,
+        push_endpoint: &str,
+    ) -> Result<Self> {
         let push_endpoint = url::Url::parse(&push_endpoint)?;
         Ok(Self {
-            connect_addr,
+            creds: format!("{}.{}:{}", uuid, device_id, password),
             push_endpoint,
             channels: Channels::none(),
             push_instant: Arc::new(Mutex::new(

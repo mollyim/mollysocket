@@ -1,5 +1,4 @@
 use crate::{
-    config,
     db::Connection,
     server::{DB, KILL_VEC, METRICS, NEW_CO_TX},
     ws::SignalWebSocket,
@@ -53,16 +52,14 @@ async fn connection_loop(co: &mut Connection) {
             return;
         }
         log::info!("Starting connection for {}", &co.uuid);
-        let mut socket = match SignalWebSocket::new(
-            config::get_ws_endpoint(&co.uuid, co.device_id, &co.password),
-            co.endpoint.clone(),
-        ) {
-            Ok(s) => s,
-            Err(e) => {
-                log::info!("An error occured for {}: {}", co.uuid, e);
-                return;
-            }
-        };
+        let mut socket =
+            match SignalWebSocket::new(&co.uuid, co.device_id, &co.password, &co.endpoint) {
+                Ok(s) => s,
+                Err(e) => {
+                    log::info!("An error occured for {}: {}", co.uuid, e);
+                    return;
+                }
+            };
         let metrics_future = set_metrics(&mut socket);
         // Add the channel to kill the connection if needed
         let (kill_tx, mut kill_rx) = mpsc::unbounded();

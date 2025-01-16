@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use base64::{prelude::BASE64_STANDARD, Engine};
 use eyre::Result;
 use futures_channel::mpsc;
 use futures_util::{pin_mut, select, FutureExt, SinkExt, StreamExt};
@@ -10,7 +11,7 @@ use std::{
 };
 use tokio::time;
 use tokio_tungstenite::{
-    tungstenite::{self, client::IntoClientRequest},
+    tungstenite::{self, ClientRequestBuilder},
     Connector::NativeTls,
 };
 
@@ -23,18 +24,21 @@ const KEEPALIVE_TIMEOUT: Duration = Duration::from_secs(40);
 
 #[async_trait(?Send)]
 pub trait WebSocketConnection {
-    fn get_url(&self) -> &url::Url;
+    fn get_url(&self) -> &str;
+    /// return "login:password"
+    fn get_creds(&self) -> &str;
     fn get_websocket_tx(&self) -> &Option<mpsc::UnboundedSender<tungstenite::Message>>;
     fn set_websocket_tx(&mut self, tx: Option<mpsc::UnboundedSender<tungstenite::Message>>);
     fn get_last_keepalive(&self) -> Arc<Mutex<Instant>>;
     async fn on_message(&self, message: WebSocketMessage);
 
     async fn connect(&mut self, tls_connector: TlsConnector) -> Result<()> {
-        let mut request = self.get_url().into_client_request()?;
-
-        request
-            .headers_mut()
-            .insert("X-Signal-Agent", http::HeaderValue::from_static("\"OWA\""));
+        let request = ClientRequestBuilder::new(self.get_url().parse()?)
+            .with_header("X-Signal-Agent", "\"OWA\"")
+            .with_header(
+                "Authorization",
+                format!("Basic {}", BASE64_STANDARD.encode(self.get_creds())),
+            );
 
         let (ws_stream, _) = tokio_tungstenite::connect_async_tls_with_config(
             request,
