@@ -6,7 +6,7 @@ RUN cargo build --release --bin mollysocket
 
 
 FROM docker.io/debian:bookworm-slim AS runtime
-WORKDIR app
+WORKDIR /data
 
 ENV MOLLY_HOST=0.0.0.0
 ENV MOLLY_PORT=8020
