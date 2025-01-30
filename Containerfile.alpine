@@ -7,7 +7,7 @@ COPY . .
 RUN cargo build --release --bin mollysocket
 
 
-FROM alpine AS runtime
+FROM alpine:latest AS runtime
 WORKDIR app
 
 ENV MOLLY_HOST=0.0.0.0
