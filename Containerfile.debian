@@ -1,6 +1,10 @@
 FROM docker.io/rust:bookworm AS builder
 WORKDIR app
 
+RUN apt update \
+    && apt full-upgrade -y \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY . .
 RUN cargo build --release --bin mollysocket
 
@@ -11,9 +15,10 @@ WORKDIR /data
 ENV MOLLY_HOST=0.0.0.0
 ENV MOLLY_PORT=8020
 
-RUN apt update && \
-    apt install -y wget libssl3 libsqlite3-0 ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
+RUN apt update \
+    && apt full-upgrade -y \
+    && apt install -y wget libssl3 libsqlite3-0 ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/target/release/mollysocket /usr/local/bin/
 HEALTHCHECK --interval=1m --timeout=3s \
