@@ -76,38 +76,7 @@ The easiest way to pass the VAPID key when using docker compose is to pass it wi
 
 #### With a systemd service
 
-If you use a [systemd service](mollysocket.service) for MollySocket, you may wish to use [systemd-creds](https://systemd.io/CREDENTIALS/) to store securely the VAPID key.
-
-<sup>If you have installed your systemd service in [user mode](https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html#Unit%20File%20Load%20Path), adds `--user` to systemd-creds commands.</sup>
-
-```console
-$ # Service installed in user mode:
-$ # mollysocket vapid gen | systemd-creds --user encrypt --name=ms_vapid -p - -
-$
-# # Service installed in system mode:
-# mollysocket vapid gen | systemd-creds encrypt --name=ms_vapid -p - -
-SetCredentialEncrypted=ms_vapid: \
-        k6iUCUh0RJCQyvL8k8q1UyAAAAABAAAADAAAABAAAAC1lFmbWAqWZ8dCCQkAAAAAgAAAA \
-        AAAAAALACMA0AAAACAAAAAAfgAg9uNpGmj8LL2nHE0ixcycvM3XkpOCaf+9rwGscwmqRJ \
-        cAEO24kB08FMtd/hfkZBX8PqoHd/yPTzRxJQBoBsvo9VqolKdy9Wkvih0HQnQ6NkTKEdP \
-        HQ08+x8sv5sr+Mkv4ubp3YT1Jvv7CIPCbNhFtag1n5y9J7bTOKt2SQwBOAAgACwAAABIA \
-        ID8H3RbsT7rIBH02CIgm/Gv1ukSXO3DMHmVQkDG0wEciABAAII6LvrmL60uEZcp5qnEkx \
-        SuhUjsDoXrJs0rfSWX4QAx5PwfdFuxPusgE==
-```
-
-This will output `SetCredentialEncrypted` you can use in your systemd unit file:
-
-```ini
-[Service]
-SetCredentialEncrypted=ms_vapid: \
-        k6iUCUh0RJCQyvL8k8q1UyAAAAABAAAADAAAABAAAAC1lFmbWAqWZ8dCCQkAAAAAgAAAA \
-        AAAAAALACMA0AAAACAAAAAAfgAg9uNpGmj8LL2nHE0ixcycvM3XkpOCaf+9rwGscwmqRJ \
-        cAEO24kB08FMtd/hfkZBX8PqoHd/yPTzRxJQBoBsvo9VqolKdy9Wkvih0HQnQ6NkTKEdP \
-        HQ08+x8sv5sr+Mkv4ubp3YT1Jvv7CIPCbNhFtag1n5y9J7bTOKt2SQwBOAAgACwAAABIA \
-        ID8H3RbsT7rIBH02CIgm/Gv1ukSXO3DMHmVQkDG0wEciABAAII6LvrmL60uEZcp5qnEkx \
-        SuhUjsDoXrJs0rfSWX4QAx5PwfdFuxPusgE==
-Environment=MOLLY_VAPID_KEY_FILE=%d/ms_vapid
-```
+If you use a [systemd service](mollysocket.service) for MollySocket, installation steps are listed in <./INSTALL.md>
 
 Alternatively, you can store the VAPID key in cleartext in the systemd unit file:
 

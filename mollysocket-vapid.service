@@ -1,0 +1,14 @@
+[Unit]
+Description=Generate MollySocket VAPID key
+
+[Service]
+Type=oneshot
+ExecStart=sh -c '( [ -f $CONFIGURATION_DIRECTORY/conf.toml ] || echo "db = \'$STATE_DIRECTORY/ms.db\'" > $CONFIGURATION_DIRECTORY/conf.toml ); ( [ -f $CONFIGURATION_DIRECTORY/vapid.key ] || ( ms vapid gen | systemd-creds encrypt - $CONFIGURATION_DIRECTORY/vapid.key ) )'
+RemainAfterExit=true
+
+ConfigurationDirectory=mollysocket
+StateDirectory=mollysocket
+ProtectHome=true
+ProtectSystem=true
+
+
