@@ -84,5 +84,5 @@ Once you have registered Molly (with option A or B), and you will be the only us
 If you wish to backup your VAPID privkey, you can run the following:
 
 ```console
-# systemd-run -P --wait -p LoadCredentialEncrypted=vapid.key:/etc/mollysocket/vapid.key systemd-creds cat vapid.key
+# systemd-creds decrypt /etc/mollysocket/vapid.key
 ```
