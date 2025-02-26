@@ -130,7 +130,7 @@ impl SignalWebSocket {
                 let _ = tx.unbounded_send(1);
             }
             count += 1;
-            log::info!("Retrying to connect in {}0 secondes.", count);
+            log::info!("Retrying to connect in {}0 seconds.", count);
             time::sleep(Duration::from_secs(count * 10)).await;
         }
     }
