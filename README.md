@@ -157,9 +157,9 @@ You need to pass the original Host and the original URL to MollySocket with the 
 
 ```
 
-* **On the Android app, the status states _MollySocket server not found_**
+* **On the Android app, the status states _Invalid response from server_**
 
-The MollySocket server can't be reached on that URL. Does opening the URL in your mobile browser works ? You should try to reconfigure MollySocket, by clicking on "MollySocket server" in Molly settings.
+The MollySocket server can't be reached on that URL or doesn't respond correctly. Does opening the URL in your mobile browser works ? You should see a QR code. Else, try to reconfigure MollySocket, by clicking on "MollySocket server" in Molly settings.
 
 * **On the Android app, the status states _The account ID is refused by the server_**
 
@@ -175,19 +175,23 @@ You have restricted the allowed UnifiedPush endpoints, or you are using a self-h
 
 Add your server to the _allowed_endpoints_: `["https://push.mydomain.tld"]`. _This is NOT your MollySocket URL_ but the one from your push provider. See [Configuration](#configuration) to configure your server correctly.
 
-* **On the Android app, the status is _Air gapped, waiting for test notification_**
+* **On the Android app, the status is _Waiting for confirmation from the MollySocket server_**
+
+It means you are using MollySocket in air-gapped mode and you don't have receive a test notification from the server.
 
 There might be 3 reasons for that:
 - You don't have yet registered your connection on a MollySocket server.
     - It is better to use MollySocket configured with a web interface, see [Web Server](#web-server) for more information.
     - If you can't have a web interface, you can use it in air gapped mode. The MollySocket server should be constantly running. You can use the docker-compose or follow the [Install doc](/Install.md).
     - Then, if you stick with air gapped mode, you will need to add your account to the MollySocket registration. You can copy the parameter on the Android settings view. Then run:
+
 ```console
 $ # If you use docker-compose:
 $ docker compose run mollysocket <paste the parameters here>
 $ # Else, if you use the binary:
 $ mollysocket <paste the parameters here>
 ```
+
 - It is possible you don't use a recent enough version of MollySocket and it hasn't send a request during the registration. You can run :
 ```console
 $ # Replace the UUID with your account Id
@@ -198,26 +202,20 @@ $ mollysocket connection ping c8d44128-5c99-4810-a7d3-71c079891c27
 ```
 - You have a problem with your UnifiedPush setup. You can get further troubleshooting information on this page: <https://unifiedpush.org/users/troubleshooting/>.
 
-* **On the Android app, the status is _Waiting for test notification_**
-
-Tap on "Test configuration", if it doesn't work, you should try to reconfigure MollySocket, by clicking on "MollySocket server" in Molly settings.
-
-If it doesn't work again, you have a problem with your UnifiedPush setup. You can get further troubleshooting information on this page: <https://unifiedpush.org/users/troubleshooting/>.
-
 * **I use the Air-gapped mode and I don't receive notifications**.
 
 If you use air-gapped mode, then Molly (android) can't test the setup and it assumes you have correctly setup everything. You should double check that the account ID is accepted by your mollysocket server and the endpoint is allowed by your mollysocket server (check the output logs).
 
-* **The status is "OK" or "OK: Air Gapped" but I still don't get notifications**
+* **The status is _OK_ but I still don't get notifications**
 
-If you are using MollySocket with a webserver, go to Molly Settings > Notifications > UnifiedPush and click "Test configuration".
+**If you are using MollySocket with a webserver,** go to Molly Settings > Notifications > UnifiedPush and click "Test configuration". If it doesn't work, you should try to reconfigure MollySocket, by clicking on "MollySocket server" in Molly settings.
 
-If you are using in air-gapped mode, run this command:
+**If you are using in air-gapped mode,** run this command:
 
 ```console
 $ # Replace the UUID with your account Id
 $ # If you use docker-compose:
-$ docker compose run mollysocket connection ping c8d44128-5c99-4810-a7d3-71c079891c27
+$ docker compose run mollysocket mollysocket connection ping c8d44128-5c99-4810-a7d3-71c079891c27
 $ # Else, if you use the binary:
 $ mollysocket connection ping c8d44128-5c99-4810-a7d3-71c079891c27
 ```
