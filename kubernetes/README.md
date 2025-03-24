@@ -1,4 +1,4 @@
-Proper manifest files for a deployment using Kubernetes. Obviously feel free to adjust to your needs. In this example, Traefik is used but feel free to use whatever ingress method (Nginx, HA Proxy, etc.) you would like, or create the Kubernetes secret via the CLI.
+Proper manifest files for a deployment using Kubernetes. Obviously feel free to adjust to your needs. In this example, Traefik is used but feel free to use whatever ingress method (Nginx, HA Proxy, etc.) you would like. Also, you can create the Kubernetes secret via the CLI.
 
 1. After deployed, enter the Kubernetes pod via a command such as "kubectl exec -it mollysocket-5c767fb96d-8gfzz -n default -- /bin/sh"
 
