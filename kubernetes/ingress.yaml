@@ -1,0 +1,20 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: mollysocket
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: traefik-external
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`mollysocket.domain.tld`)
+      kind: Rule
+      services:
+        - name: mollysocket
+          port: 8020
+  tls:
+    secretName: domain-tld-tls
+
+

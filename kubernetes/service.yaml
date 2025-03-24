@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mollysocket
+  namespace: default
+spec:
+  type: ClusterIP
+  selector:
+    app: mollysocket
+  ports:
+  - protocol: TCP
+    port: 8020
+    targetPort: 8020
