@@ -38,7 +38,7 @@ pub async fn run() {
     #[cfg(unix)]
     let sigterm_future = sigterm_stream.recv().fuse();
     #[cfg(not(unix))]
-    let sigterm_future = std::future::pending().fuse();
+    let sigterm_future = std::future::pending::<()>().fuse();
     let joined_future = join(web::launch().fuse(), connections::run().fuse());
 
     pin_mut!(sigint_future, sigterm_future, joined_future);
