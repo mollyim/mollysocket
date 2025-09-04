@@ -25,7 +25,6 @@ ProtectHome=true
 ProtectSystem=true
 
 ExecStart=ms server
-KillSignal=SIGINT
 
 Restart=on-failure
 
