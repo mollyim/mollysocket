@@ -3,6 +3,8 @@ use futures_util::{future::join, pin_mut, select, FutureExt};
 use lazy_static::lazy_static;
 use std::sync::{Arc, Mutex};
 use tokio::signal;
+#[cfg(unix)]
+use tokio::signal::unix::{self, SignalKind};
 
 mod connections;
 mod metrics;
@@ -30,13 +32,20 @@ lazy_static! {
 }
 
 pub async fn run() {
-    let signal_future = signal::ctrl_c().fuse();
+    let sigint_future = signal::ctrl_c().fuse();
+    #[cfg(unix)]
+    let mut sigterm_stream = unix::signal(SignalKind::terminate()).unwrap();
+    #[cfg(unix)]
+    let sigterm_future = sigterm_stream.recv().fuse();
+    #[cfg(not(unix))]
+    let sigterm_future = std::future::pending().fuse();
     let joined_future = join(web::launch().fuse(), connections::run().fuse());
 
-    pin_mut!(signal_future, joined_future);
+    pin_mut!(sigint_future, sigterm_future, joined_future);
 
     select!(
-        _ = signal_future => log::info!("SIGINT received"),
+        _ = sigint_future => log::info!("SIGINT received"),
+        _ = sigterm_future => log::info!("SIGTERM received"),
         _ = joined_future => log::warn!("Server stopped"),
     )
 }
