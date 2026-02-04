@@ -39,25 +39,25 @@ impl Connection {
 #[derive(Debug)]
 pub struct OptTime(pub Option<SystemTime>);
 
-impl From<&OptTime> for u64 {
-    fn from(i: &OptTime) -> u64 {
+impl From<&OptTime> for i64 {
+    fn from(i: &OptTime) -> i64 {
         let instant = match i.0 {
             Some(instant) => instant,
             None => return 0,
         };
         match instant.duration_since(UNIX_EPOCH) {
-            Ok(duration) => duration.as_secs(),
+            Ok(duration) => duration.as_secs() as i64,
             Err(_) => 0,
         }
     }
 }
 
-impl From<u64> for OptTime {
-    fn from(i: u64) -> OptTime {
+impl From<i64> for OptTime {
+    fn from(i: i64) -> OptTime {
         if i == 0 {
             return OptTime(None);
         }
-        let duration = Duration::from_secs(i);
+        let duration = Duration::from_secs(i as u64);
         OptTime(UNIX_EPOCH.checked_add(duration))
     }
 }
@@ -76,7 +76,7 @@ impl Connection {
             password: row.get(2)?,
             endpoint: row.get(3)?,
             forbidden: row.get(4)?,
-            last_registration: OptTime::from(row.get::<usize, u64>(5)?),
+            last_registration: OptTime::from(row.get::<usize, i64>(5)?),
         })
     }
 }
@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS connections(
         self.db.lock().unwrap().execute(
             "INSERT INTO connections(uuid, device_id, password, endpoint, forbidden, last_registration)
             VALUES (?, ?, ?, ?, ?, ?);",
-            [&co.uuid, &co.device_id.to_string(), &co.password, &co.endpoint, &String::from(if co.forbidden { "1" } else { "0" }), &u64::from(&co.last_registration).to_string()]
+            [&co.uuid, &co.device_id.to_string(), &co.password, &co.endpoint, &String::from(if co.forbidden { "1" } else { "0" }), &i64::from(&co.last_registration).to_string()]
         )?;
         Ok(())
     }
@@ -116,7 +116,7 @@ CREATE TABLE IF NOT EXISTS connections(
             "UPDATE connections
             SET last_registration = ?
             WHERE uuid = ?;",
-            [&u64::from(&now).to_string(), uuid],
+            [&i64::from(&now).to_string(), uuid],
         )?;
         Ok(())
     }
