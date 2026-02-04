@@ -1,12 +1,11 @@
 use crate::{
     db::Connection,
     server::{DB, KILL_VEC, METRICS, NEW_CO_TX},
-    ws::SignalWebSocket,
+    ws::{SignalWebSocket, SignalWebSocketError},
 };
 use eyre::Result;
 use futures_channel::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use futures_util::{future::join_all, join, select, Future, FutureExt, StreamExt};
-use tokio_tungstenite::tungstenite;
 
 /**
 Associates the kill channel to the [Connection][crate::db::Connection]#uuid.
@@ -129,14 +128,12 @@ fn handle_connection_closed(res: Result<()>, co: &mut Connection) {
     match res {
         Ok(()) => (),
         Err(error) => {
-            if let Some(tungstenite::Error::Http(resp)) = error.downcast_ref::<tungstenite::Error>()
+            if let Some(SignalWebSocketError::RegistrationRemoved) =
+                error.downcast_ref::<SignalWebSocketError>()
             {
-                let status = resp.status();
-                log::info!("Connection for {} closed with status: {}", &co.uuid, status);
-                if status == 403 {
-                    co.forbidden = true;
-                    let _ = DB.add(co);
-                }
+                log::info!("Disabling connection for {}", &co.uuid);
+                co.forbidden = true;
+                let _ = DB.add(co);
             }
         }
     }

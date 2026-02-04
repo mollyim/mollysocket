@@ -1,9 +1,11 @@
 use async_trait::async_trait;
 use eyre::Result;
 use futures_channel::mpsc;
+use http::StatusCode;
 use prost::Message;
 use rocket::serde::json::serde_json::json;
 use std::{
+    fmt::{Display, Formatter},
     sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
@@ -19,7 +21,7 @@ use super::{
         WebSocketResponseMessage,
     },
 };
-use crate::{config, utils::post_allowed::post_allowed};
+use crate::{config, utils::post_allowed::post_allowed, ws::websocket_connection};
 
 const PUSH_TIMEOUT: Duration = Duration::from_secs(1);
 
@@ -41,6 +43,23 @@ impl Channels {
         }
     }
 }
+
+#[derive(Debug)]
+pub enum Error {
+    /// We got:
+    /// - a 403
+    /// - or a ws response ConnectedElseWhere and our push service isn't valid anymore
+    /// => the registration has migrated
+    RegistrationRemoved,
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl std::error::Error for Error {}
 
 #[derive(Debug)]
 pub struct SignalWebSocket {
@@ -117,8 +136,19 @@ impl SignalWebSocket {
                 if let Some(tungstenite::Error::Http(resp)) = e.downcast_ref::<tungstenite::Error>()
                 {
                     if resp.status() == 403 {
-                        return Err(e);
+                        return Err(Error::RegistrationRemoved.into());
+                    } else {
+                        log::debug!("HTTP error: {:?}", e);
                     }
+                } else if let Some(websocket_connection::Error::ConnectedElseWhere) =
+                    e.downcast_ref::<websocket_connection::Error>()
+                {
+                    log::debug!("Connected elsewhere: informing client");
+                    // we try to push a simple json {"code": 4409}, if we receive a 403, 404 or 410:
+                    // then the registration should be handled as removed (like a 403)
+                    let _ = self.push_on_connected_elsewhere().await?;
+                } else {
+                    log::debug!("Connection error: {:?}", e);
                 }
             }
             if let Some(duration) = Instant::now().checked_duration_since(instant) {
@@ -246,6 +276,35 @@ impl SignalWebSocket {
         if let Some(tx) = &self.channels.on_push_tx {
             let _ = tx.unbounded_send(1);
         }
+    }
+
+    /// If we are connected elsewhere, we try to push a message to the endpoint:
+    /// - if we receive a 403/404/410, then the endpoint as been removed and we should
+    /// delete the registration
+    /// - else, it may be useful for the client to rotate the linked device
+    async fn push_on_connected_elsewhere(&self) -> Result<()> {
+        let url = self.push_endpoint.clone();
+        let res = post_allowed(url, &json!({"code": 4409}), Some("4409")).await;
+        log::trace!("{:?}", res);
+        match &res {
+            Err(e) => {
+                if let Some(e) = e.downcast_ref::<reqwest::Error>() {
+                    match e.status() {
+                        Some(StatusCode::FORBIDDEN)
+                        | Some(StatusCode::NOT_FOUND)
+                        | Some(StatusCode::GONE) => return Err(Error::RegistrationRemoved.into()),
+                        _ => (),
+                    }
+                }
+            }
+            Ok(resp) => match resp.status() {
+                StatusCode::FORBIDDEN | StatusCode::NOT_FOUND | StatusCode::GONE => {
+                    return Err(Error::RegistrationRemoved.into())
+                }
+                _ => (),
+            },
+        }
+        Ok(())
     }
 
     fn waiting_timeout_reached(&self) -> bool {
