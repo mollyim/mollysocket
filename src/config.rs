@@ -12,6 +12,7 @@ static CONFIG: OnceLock<Config> = OnceLock::new();
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum SignalEnvironment {
+    Flatline,
     Production,
     Staging,
 }
@@ -225,6 +226,7 @@ You may want to add \"{}\" to allowed_endpoints",
 
     fn get_ws_endpoint(&self) -> &'static str {
         match self.signal_env {
+            SignalEnvironment::Flatline => "wss://whisper.flatline.internal/v1/websocket/",
             SignalEnvironment::Production => "wss://chat.signal.org/v1/websocket/",
             SignalEnvironment::Staging => "wss://chat.staging.signal.org/v1/websocket/",
         }

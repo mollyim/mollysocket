@@ -1,7 +1,7 @@
 use native_tls::{Certificate, TlsConnector};
 
 pub fn build_tls_connector() -> Result<TlsConnector, native_tls::Error> {
-    let root_ca = include_bytes!("certs/signal-messenger.pem");
+    let root_ca = include_bytes!("certs/flatline.pem");
     let root_ca = Certificate::from_pem(root_ca).unwrap();
     let mut builder = TlsConnector::builder();
     builder.disable_built_in_roots(true);
