@@ -13,7 +13,7 @@ use tokio::time;
 use tokio_tungstenite::tungstenite;
 
 use super::tls;
-use super::websocket_connection::WebSocketConnection;
+use super::websocket_connection::{self, WebSocketConnection};
 use super::{
     proto_signalservice::Envelope,
     proto_websocketresources::{
@@ -21,7 +21,7 @@ use super::{
         WebSocketResponseMessage,
     },
 };
-use crate::{config, utils::post_allowed::post_allowed, ws::websocket_connection};
+use crate::{config, utils::post_allowed::post_allowed};
 
 const PUSH_TIMEOUT: Duration = Duration::from_secs(1);
 
