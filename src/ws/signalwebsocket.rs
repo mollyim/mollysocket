@@ -23,7 +23,18 @@ use super::{
 };
 use crate::{config, utils::post_allowed::post_allowed};
 
+/// Time between 2 regular push notifications
+///
+/// We don't need to send a push notif per message, as
+/// the client stay connected for more than 10secs on push
 const PUSH_TIMEOUT: Duration = Duration::from_secs(1);
+/// Time between last push notification and a delivery check
+///
+/// A delivery check is a push notif used to control the HTTP reponse of the push endpoint,
+/// to check if we have the good one.
+/// The delivery check is useful in case the user has migrated to another mollysocket
+/// instance, but we are still connected, causing an error 4409 on the other instance
+const DELIVERY_CHECK_TIMEOUT: Duration = Duration::from_hours(1);
 
 #[derive(Debug)]
 pub struct Channels {
@@ -154,7 +165,7 @@ impl SignalWebSocket {
                     log::debug!("connection_loop: got ConnectedElseWhere.");
                     // we try to push a simple json {"code": 4409}, if we receive a 403, 404 or 410:
                     // then the registration should be handled as removed (like a 403)
-                    let _ = self.push_on_connected_elsewhere().await?;
+                    let _ = self.push_delivery_check().await?;
                 } else {
                     log::debug!("Connection error: {:?}", e);
                 }
@@ -288,11 +299,29 @@ impl SignalWebSocket {
         self.assert_push_response(res)
     }
 
-    /// If we are connected elsewhere, we try to push a message to the endpoint:
+    /// If we received an error 4409 "connected elsewhere", we send a "delivery check" push notif:
     /// \* if we receive a 403/404/410, then the endpoint as been removed and we should
     /// delete the registration
-    /// \* else, it may be useful for the client to rotate the linked device
-    async fn push_on_connected_elsewhere(&self) -> Result<()> {
+    /// \* else, the other instance is probably the one that need to unregister, which will disable the registration
+    /// with the same mechanism
+    /// \* if the 2 instances run with a valid endpoint, the user needs to rotate the linked device
+    ///
+    /// We send the test notification, only if we didn't send one during the last [DELIVERY_CHECK_TIMEOUT] period
+    /// to avoid spamming the client
+    async fn push_delivery_check(&self) -> Result<()> {
+        {
+            let mut instant = self.push_instant.lock().unwrap();
+            if instant.elapsed() > DELIVERY_CHECK_TIMEOUT {
+                log::info!("push_delivery_check: We send a notification recently, no need to push a delivery check.");
+                return Ok(());
+            }
+            // We set the last push notif to now - PUSH_TIMEOUT, so if a push notification arrives
+            // between now and now + PUSH_TIMEOUT, it can wake the client correctly
+            // We fallback to now, in case of error, but it shouldn't fail.
+            *instant = Instant::now()
+                .checked_sub(PUSH_TIMEOUT)
+                .unwrap_or(Instant::now());
+        }
         let url = self.push_endpoint.clone();
         let res = post_allowed(url, &json!({"code": 4409}), Some("4409")).await;
         log::trace!("{:?}", res);
