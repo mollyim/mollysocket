@@ -47,8 +47,8 @@ impl Channels {
 #[derive(Debug)]
 pub enum Error {
     /// We got:
-    /// - a 403
-    /// - or a ws response ConnectedElseWhere and our push service isn't valid anymore
+    /// \* a 403
+    /// \* or a ws response ConnectedElseWhere and our push service isn't valid anymore
     /// => the registration has migrated
     RegistrationRemoved,
 }
@@ -279,9 +279,9 @@ impl SignalWebSocket {
     }
 
     /// If we are connected elsewhere, we try to push a message to the endpoint:
-    /// - if we receive a 403/404/410, then the endpoint as been removed and we should
+    /// \* if we receive a 403/404/410, then the endpoint as been removed and we should
     /// delete the registration
-    /// - else, it may be useful for the client to rotate the linked device
+    /// \* else, it may be useful for the client to rotate the linked device
     async fn push_on_connected_elsewhere(&self) -> Result<()> {
         let url = self.push_endpoint.clone();
         let res = post_allowed(url, &json!({"code": 4409}), Some("4409")).await;
