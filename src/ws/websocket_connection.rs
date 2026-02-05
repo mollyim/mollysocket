@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use base64::{prelude::BASE64_STANDARD, Engine};
-use eyre::Result;
+use eyre::{eyre, Result};
 use futures_channel::mpsc;
 use futures_util::{pin_mut, select, FutureExt, SinkExt, StreamExt, TryStreamExt};
 use native_tls::TlsConnector;
@@ -15,7 +15,7 @@ use tokio_tungstenite::{
     tungstenite::{
         self,
         protocol::{self, frame::coding::CloseCode, CloseFrame},
-        ClientRequestBuilder, Error as TError,
+        ClientRequestBuilder,
     },
     Connector::NativeTls,
 };
@@ -29,8 +29,8 @@ const KEEPALIVE_TIMEOUT: Duration = Duration::from_secs(40);
 
 #[derive(Debug)]
 pub enum Error {
-    #[allow(dead_code)]
-    Ws(TError),
+    Ws,
+    PushError,
     ConnectedElseWhere,
 }
 
@@ -50,7 +50,7 @@ pub trait WebSocketConnection {
     fn get_websocket_tx(&self) -> &Option<mpsc::UnboundedSender<tungstenite::Message>>;
     fn set_websocket_tx(&mut self, tx: Option<mpsc::UnboundedSender<tungstenite::Message>>);
     fn get_last_keepalive(&self) -> Arc<Mutex<Instant>>;
-    async fn on_message(&self, message: WebSocketMessage);
+    async fn on_message(&self, message: WebSocketMessage) -> Result<()>;
 
     /// Connect to the server and handle messages
     /// Returns HTTP Error, or ConnectedElseWhere or () if disconnected normally
@@ -86,7 +86,7 @@ pub trait WebSocketConnection {
         let to_ws_handle = rx.map(Ok).forward(ws_write).fuse();
 
         let from_ws_handle = ws_read
-            .map_err(Error::Ws)
+            .map_err(|e| eyre!(e).wrap_err(eyre!(Error::Ws)))
             .try_for_each(|message| async {
                 log::debug!("New message");
                 log::trace!("{:?}", message);
@@ -97,12 +97,14 @@ pub trait WebSocketConnection {
                     })) = message
                     {
                         log::debug!("Websocket closed: connected elsewhere");
-                        return Err(Error::ConnectedElseWhere);
+                        return Err(eyre!(Error::ConnectedElseWhere));
                     } else {
                         log::debug!("Websocket closed normally")
                     }
                 } else if message.is_binary() {
-                    self.handle_message(message).await;
+                    if let Err(e) = self.handle_message(message).await {
+                        return Err(e.wrap_err(eyre!(Error::PushError)));
+                    }
                 }
                 Ok(())
             })
@@ -124,10 +126,7 @@ pub trait WebSocketConnection {
         // handle websocket
         select!(
             res = from_ws_handle => {
-                log::warn!("Websocket finished: {:?}", res);
-                if let Err(Error::ConnectedElseWhere) = res {
-                    return Err(Error::ConnectedElseWhere.into());
-                }
+                let _ = res?;
             },
             _ = to_ws_handle => log::warn!("Messages finished"),
             _ = from_keepalive_handle => log::warn!("Keepalive finished"),
@@ -136,16 +135,19 @@ pub trait WebSocketConnection {
         Ok(())
     }
 
-    async fn handle_message(&self, message: tungstenite::Message) {
+    async fn handle_message(&self, message: tungstenite::Message) -> Result<()> {
         let data = message.into_data();
         let ws_message = match WebSocketMessage::decode(data) {
             Ok(msg) => msg,
             Err(e) => {
-                log::error!("Failed to decode protobuf: {}", e);
-                return;
+                // We ignore these issues, we have to the common
+                // `failed to decode Protobuf message: invalid wire type value: 7`
+                // but it seems to be a 'best effort' description: https://github.com/tokio-rs/prost/blob/fafa97f3e05b9ffd84769c7c606499243a6fa614/prost/src/error.rs#L15
+                log::trace!("Failed to decode protobuf: {}", e);
+                return Ok(());
             }
         };
-        self.on_message(ws_message).await;
+        self.on_message(ws_message).await
     }
 
     async fn send_message(&self, message: WebSocketMessage) {

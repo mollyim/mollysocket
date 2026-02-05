@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use eyre::Result;
+use eyre::{eyre, Result};
 use futures_channel::mpsc;
 use http::StatusCode;
 use prost::Message;
@@ -92,16 +92,19 @@ impl WebSocketConnection for SignalWebSocket {
         Arc::clone(&self.last_keepalive)
     }
 
-    async fn on_message(&self, message: WebSocketMessage) {
+    async fn on_message(&self, message: WebSocketMessage) -> Result<()> {
         if let Some(type_int) = message.r#type {
             if let Ok(type_) = Type::try_from(type_int) {
                 match type_ {
                     Type::Response => self.on_response(message.response),
-                    Type::Request => self.on_request(message.request).await,
+                    Type::Request => {
+                        let _ = self.on_request(message.request).await?;
+                    }
                     _ => (),
                 };
             }
         }
+        Ok(())
     }
 }
 
@@ -133,17 +136,22 @@ impl SignalWebSocket {
                 *keepalive = Instant::now();
             }
             if let Err(e) = self.connect(tls::build_tls_connector()?).await {
-                if let Some(tungstenite::Error::Http(resp)) = e.downcast_ref::<tungstenite::Error>()
+                if let Some(Error::RegistrationRemoved) = e.downcast_ref::<Error>() {
+                    log::debug!("connection_loop: got RegistrationRemoved.");
+                    return Err(eyre!(Error::RegistrationRemoved));
+                } else if let Some(tungstenite::Error::Http(resp)) =
+                    e.downcast_ref::<tungstenite::Error>()
                 {
                     if resp.status() == 403 {
-                        return Err(Error::RegistrationRemoved.into());
+                        log::debug!("connection_loop: got HTTP error 403 (linked device creds aren't valid anymore).");
+                        return Err(eyre!(Error::RegistrationRemoved));
                     } else {
                         log::debug!("HTTP error: {:?}", e);
                     }
                 } else if let Some(websocket_connection::Error::ConnectedElseWhere) =
                     e.downcast_ref::<websocket_connection::Error>()
                 {
-                    log::debug!("Connected elsewhere: informing client");
+                    log::debug!("connection_loop: got ConnectedElseWhere.");
                     // we try to push a simple json {"code": 4409}, if we receive a 403, 404 or 410:
                     // then the registration should be handled as removed (like a 403)
                     let _ = self.push_on_connected_elsewhere().await?;
@@ -176,7 +184,7 @@ impl SignalWebSocket {
     /**
      * That's when we must send a notification
      */
-    async fn on_request(&self, request: Option<WebSocketRequestMessage>) {
+    async fn on_request(&self, request: Option<WebSocketRequestMessage>) -> Result<()> {
         log::debug!("New request");
         if let Some(request) = request {
             if let Some(envelope) = self.request_to_envelope(request).await {
@@ -185,13 +193,14 @@ impl SignalWebSocket {
                 }
                 if self.waiting_timeout_reached() {
                     if envelope.urgent() {
-                        self.send_push().await;
+                        let _ = self.send_push().await?;
                     }
                 } else {
                     log::debug!("The waiting timeout is not reached: the request is ignored.");
                 }
             }
         }
+        Ok(())
     }
 
     /**
@@ -264,7 +273,7 @@ impl SignalWebSocket {
         }
     }
 
-    async fn send_push(&self) {
+    async fn send_push(&self) -> Result<()> {
         log::debug!("Sending the notification.");
         {
             let mut instant = self.push_instant.lock().unwrap();
@@ -272,10 +281,11 @@ impl SignalWebSocket {
         }
 
         let url = self.push_endpoint.clone();
-        let _ = post_allowed(url, &json!({"urgent": true}), Some("mollysocket")).await;
+        let res = post_allowed(url, &json!({"urgent": true}), Some("mollysocket")).await;
         if let Some(tx) = &self.channels.on_push_tx {
             let _ = tx.unbounded_send(1);
         }
+        self.assert_push_response(res)
     }
 
     /// If we are connected elsewhere, we try to push a message to the endpoint:
@@ -286,20 +296,28 @@ impl SignalWebSocket {
         let url = self.push_endpoint.clone();
         let res = post_allowed(url, &json!({"code": 4409}), Some("4409")).await;
         log::trace!("{:?}", res);
-        match &res {
-            Err(e) => {
-                if let Some(e) = e.downcast_ref::<reqwest::Error>() {
+        self.assert_push_response(res)
+    }
+
+    fn assert_push_response(&self, res: Result<reqwest::Response>) -> Result<()> {
+        match res {
+            Err(err) => {
+                if let Some(e) = err.downcast_ref::<reqwest::Error>() {
                     match e.status() {
                         Some(StatusCode::FORBIDDEN)
                         | Some(StatusCode::NOT_FOUND)
-                        | Some(StatusCode::GONE) => return Err(Error::RegistrationRemoved.into()),
+                        | Some(StatusCode::GONE) => {
+                            log::debug!("Got response with status={:?}", e.status());
+                            return Err(err.wrap_err(eyre!(Error::RegistrationRemoved)));
+                        }
                         _ => (),
                     }
                 }
             }
             Ok(resp) => match resp.status() {
                 StatusCode::FORBIDDEN | StatusCode::NOT_FOUND | StatusCode::GONE => {
-                    return Err(Error::RegistrationRemoved.into())
+                    log::debug!("Got response with status={:?}", resp.status());
+                    return Err(eyre!(Error::RegistrationRemoved));
                 }
                 _ => (),
             },
