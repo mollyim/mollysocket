@@ -99,7 +99,11 @@ This is required to help to debug some setups. You should unregister Molly from 
         .iter_mut()
         .for_each(|connection| {
             if anonymized {
-                connection.uuid = RE.replace_all(&connection.uuid, "x").into();
+                connection.uuid = format!(
+                    "{}{}",
+                    &connection.uuid[..4],
+                    RE.replace_all(&connection.uuid[4..], "x")
+                );
                 connection.password = RE.replace_all(&connection.password, "x").into();
                 connection.endpoint = anonymize_url(&connection.endpoint);
             }
