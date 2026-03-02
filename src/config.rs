@@ -157,8 +157,9 @@ fn get_config_path(cli_config_path: Option<PathBuf>) -> Option<PathBuf> {
     }
 
     // from xdg_config_home
-    let proj_dirs = ProjectDirs::from("org", "mollyim", "mollysocket").unwrap();
-    paths.push(proj_dirs.config_dir().join("config.toml"));
+    if let Some(proj_dirs) = ProjectDirs::from("org", "mollyim", "mollysocket") {
+        paths.push(proj_dirs.config_dir().join("config.toml"));
+    }
 
     // in current directory
     paths.push(PathBuf::from("./mollysocket.toml"));
