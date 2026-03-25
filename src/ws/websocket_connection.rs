@@ -26,6 +26,14 @@ use super::proto_websocketresources::{
 
 const KEEPALIVE: Duration = Duration::from_secs(30);
 const KEEPALIVE_TIMEOUT: Duration = Duration::from_secs(40);
+/// User agent from Signal-Android
+///
+/// USER_AGENT = "Signal-Android/" + BuildConfig.VERSION_NAME + " Android/" + Build.VERSION.SDK_INT;
+///
+/// UA: https://github.com/signalapp/Signal-Android/blob/c7ec3ab837b3c149d5579840317b1dc6cd4629f3/app/src/main/java/org/thoughtcrime/securesms/net/StandardUserAgentInterceptor.java#L12
+/// VERSION_NAME => take latest https://github.com/signalapp/Signal-Android/releases/latest
+/// Build.VERSION.SDK_INT => take last Android SDK
+const USER_AGENT: &'static str = "Signal-Android/8.3.4 Android/36";
 
 #[derive(Debug)]
 pub enum Error {
@@ -57,6 +65,7 @@ pub trait WebSocketConnection {
     async fn connect(&mut self, tls_connector: TlsConnector) -> Result<()> {
         let request = ClientRequestBuilder::new(self.get_url().parse()?)
             .with_header("X-Signal-Agent", "\"OWA\"")
+            .with_header("User-Agent", USER_AGENT)
             .with_header(
                 "Authorization",
                 format!("Basic {}", BASE64_STANDARD.encode(self.get_creds())),
