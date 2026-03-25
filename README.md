@@ -239,6 +239,15 @@ MollySocket receives the credentials for a linked device and does not receive an
 * Someone with access to MollySocket database may be able to use the credentials of linked devices to spam the Signal server and hit the rate limits. I haven't checked if this would temporarily block the account or just the linked device. (Availability risk)
 * Someone with access to MollySocket database may be able to change some account field in a destructive way. For instance changing the account Name to something random. The cleartext will be random since these field are encrypted and require encryption keys to be properly encrypted.
 
+## Development
+
+### Build proto
+
+Note: This is a WIP section, but it gives an overview of the process
+
+1. Copy [SignalService.proto](https://github.com/signalapp/Signal-Android/blob/main/lib/libsignal-service/src/main/protowire/SignalService.proto) and [WebSocketResources.proto](https://github.com/signalapp/Signal-Android/blob/main/lib/libsignal-service/src/main/protowire/WebSocketResources.proto) to proto/
+2. Copy src/build_proto.rs to src/main.rs and run `cargo run`
+
 ## License
 AGPLv3: see [LICENSE.txt](./LICENSE.txt).
 
