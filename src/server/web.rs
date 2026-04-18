@@ -319,12 +319,20 @@ pub async fn launch() {
         .merge(("address", config::get_host()))
         .merge(("port", config::get_port()));
 
-    let _ = rocket::build()
+    let rocket = rocket::build()
         .configure(rocket_cfg)
-        .mount("/", routes![index, discover, register])
-        .mount_metrics("/metrics", &METRICS)
-        .launch()
-        .await;
+        .mount("/", routes![index, discover, register]);
+
+        if config::should_mount_metrics() {
+            let _ = rocket
+                .mount_metrics("/metrics", &METRICS)
+                .launch()
+                .await;
+        } else {
+            let _ = rocket
+                .launch()
+                .await;
+        }
 }
 
 fn log_qr_code() {
