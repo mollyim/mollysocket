@@ -2,8 +2,7 @@ FROM rust:alpine AS builder
 WORKDIR app
 
 RUN apk -U upgrade \
-    && apk add musl-dev openssl-dev openssl-libs-static sqlite-dev sqlite-static \
-    && rm -rf /var/cache/apk/*
+    && apk add musl-dev openssl-dev openssl-libs-static sqlite-dev sqlite-static
 
 COPY . .
 RUN cargo build --release --bin mollysocket
@@ -16,8 +15,7 @@ ENV MOLLY_HOST=0.0.0.0
 ENV MOLLY_PORT=8020
 
 RUN apk -U upgrade \
-    && apk add ca-certificates \
-    && rm -rf /var/cache/apk/*
+    && apk add --no-cache ca-certificates
 
 COPY --from=builder /app/target/release/mollysocket /usr/local/bin/
 HEALTHCHECK --interval=1m --timeout=3s \
