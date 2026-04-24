@@ -61,8 +61,40 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Resolve base image digests
+        id: base-digests
+        run: |
+          if [ "${{ matrix.flavor }}" = "alpine" ]; then
+            BUILDER_IMAGE="rust:alpine"
+            RUNTIME_IMAGE="alpine:latest"
+          else
+            BUILDER_IMAGE="rust:bookworm"
+            RUNTIME_IMAGE="debian:bookworm-slim"
+          fi
+
+          BUILDER_DIGEST=$(docker buildx imagetools inspect "$BUILDER_IMAGE" --format '{{.Manifest.Digest}}')
+          RUNTIME_DIGEST=$(docker buildx imagetools inspect "$RUNTIME_IMAGE" --format '{{.Manifest.Digest}}')
+
+          echo "builder=$BUILDER_DIGEST" >> "$GITHUB_OUTPUT"
+          echo "runtime=$RUNTIME_DIGEST" >> "$GITHUB_OUTPUT"
+          echo "Builder digest: $BUILDER_DIGEST"
+          echo "Runtime digest: $RUNTIME_DIGEST"
+
+      - name: Check if base images changed since last build
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: .base-image-digest-marker
+          key: base-image-digests-${{ matrix.flavor }}-${{ steps.base-digests.outputs.builder }}-${{ steps.base-digests.outputs.runtime }}
+
+      - name: Create digest marker file
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          echo "${{ steps.base-digests.outputs.builder }}" > .base-image-digest-marker
+          echo "${{ steps.base-digests.outputs.runtime }}" >> .base-image-digest-marker
+
       - name: Login to GitHub Container Registry
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && steps.cache.outputs.cache-hit != 'true'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -70,6 +102,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
+        if: steps.cache.outputs.cache-hit != 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
