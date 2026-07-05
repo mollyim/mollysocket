@@ -182,7 +182,7 @@ It means you are using MollySocket in air-gapped mode and you don't have receive
 There might be 3 reasons for that:
 - You don't have yet registered your connection on a MollySocket server.
     - It is better to use MollySocket configured with a web interface, see [Web Server](#web-server) for more information.
-    - If you can't have a web interface, you can use it in air gapped mode. The MollySocket server should be constantly running. You can use the docker-compose or follow the [Install doc](/Install.md).
+    - If you can't have a web interface, you can use it in air gapped mode. The MollySocket server should be constantly running. You can use the docker-compose or follow the [Install doc](INSTALL.md).
     - Then, if you stick with air gapped mode, you will need to add your account to the MollySocket registration. You can copy the parameter on the Android settings view. Then run:
 
 ```console
