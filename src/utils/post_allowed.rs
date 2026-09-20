@@ -85,7 +85,7 @@ pub async fn post_allowed<T: Serialize + ?Sized>(
     .unwrap();
 
     // That's OK to generate a new VAPID header for each request
-    // It doesn't do too many calculations, and we push at most once per seconde.
+    // It doesn't do too many calculations, and we push at most once per second.
     let vapid = vapid::get_vapid_header(url.origin()).ok();
 
     let mut builder = client

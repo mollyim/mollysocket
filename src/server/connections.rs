@@ -55,7 +55,7 @@ async fn connection_loop(co: &mut Connection) {
             match SignalWebSocket::new(&co.uuid, co.device_id, &co.password, &co.endpoint) {
                 Ok(s) => s,
                 Err(e) => {
-                    log::info!("An error occured for {}: {}", co.uuid, e);
+                    log::info!("An error occurred for {}: {}", co.uuid, e);
                     return;
                 }
             };
@@ -69,7 +69,7 @@ async fn connection_loop(co: &mut Connection) {
             });
         }
         METRICS.connections.inc();
-        // bool to stop looping if the connection has been explicitely killed.
+        // bool to stop looping if the connection has been explicitly killed.
         let mut stop_loop = false;
         // loop connection
         select!(
