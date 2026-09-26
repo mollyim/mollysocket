@@ -28,7 +28,7 @@ graph TD
 ## Setup
 
 1. You can install MollySocket via:
-    1. Docker/Podman: `docker pull ghcr.io/mollyim/mollysocket:latest`
+    1. Docker/Podman: `docker pull ghcr.io/mollyim/mollysocket:latest` 
     2. Crates.io: `cargo install mollysocket` (see [INSTALL.md](INSTALL.md) for the setup) 
     3. Direct download: <https://github.com/mollyim/mollysocket/releases> (see [INSTALL.md](INSTALL.md) for the setup)
 2. A [distributor app](https://unifiedpush.org/users/distributors/) (easiest is [ntfy](https://f-droid.org/en/packages/io.heckel.ntfy/))
@@ -39,7 +39,7 @@ For beginners, you can use a free service like ntfy.sh (do consider donating if 
 
 ## Web Server
 
-MollySocket exposes a web server so that Molly can send the information it needs to operate. You must configure TLS with a reverse proxy in front of MollySocket. Molly can only connect to the server over HTTPS.
+MollySocket exposes a web server so that Molly can send the information it needs to operate. You must configure TLS with a reverse proxy in front of MollySocket. Molly can only connect to the server over HTTPS. Reverse proxy examples are provided in the reverse_proxy_samples directory in this repo.
 
 It is possible to use MollySocket without the web server, but you will have to manually register the information MollySocket needs: see the **Air Gapped** mode on Android settings.
 
@@ -53,7 +53,7 @@ The configuration file uses the [TOML format](https://toml.io/). Below is an ove
 |                        | MOLLY_CONF                 | -c \*       | Path to the configuration file, optional          |                      | /etc/mollysocket.conf                                   |
 | host                   | MOLLY_HOST              \* |             | Listening address of the web server               | 127.0.0.1            | 0.0.0.0                                                 |
 | port                   | MOLLY_PORT              \* |             | Listening port of the web server                  | 8020                 | 8080                                                    |
-| webserver              | MOLLY_WEBSERVER         \* |             | Wether to start the web server                    | true                 | false                                                   |
+| webserver              | MOLLY_WEBSERVER         \* |             | Whether to start the web server                    | true                 | false                                                   |
 | allowed_endpoints      | MOLLY_ALLOWED_ENDPOINTS \* |             | List of UnifiedPush servers                       | `["*"]`              | `["*"]`,`["https://yourdomain.tld","https://ntfy.sh"]`  |
 | allowed_uuids          | MOLLY_ALLOWED_UUIDS     \* |             | UUIDs of signal accounts that may use this server | `["*"]`              | `["*"]`, `["abcdef-12345-tuxyz-67890"]`                 |
 | db                     | MOLLY_DB                \* |             | Path to the DB                                    | `db.sqlite`          | `"/data/ms.sqlite"`                                     |

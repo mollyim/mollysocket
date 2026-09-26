@@ -7,15 +7,41 @@ services:
       - ./data:/data
     working_dir: /data
     command: server
+    #networks: # If using the caddy service included in this compose, uncomment these 2 lines
+    #  - internal
     environment:
       - MOLLY_DB="/data/mollysocket.db"
       # Do not add space in the array ["http://a.tld","*"]
       - MOLLY_ALLOWED_ENDPOINTS=["*"]
       - MOLLY_ALLOWED_UUIDS=["*"]
       # TODO:
-      #- MOLLY_VAPID_PRIVKEY="paste output of `docker compose exec mollysocket mollysocket vapid gen` here"
+      #- MOLLY_VAPID_PRIVKEY="paste output of `docker compose exec mollysocket vapid gen` here"
       - MOLLY_HOST=0.0.0.0
       - MOLLY_PORT=8020
       - RUST_LOG=info
     ports:
       - "8020:8020"
+#If you want to use webserver mode but do not already have a reverse proxy, you can uncomment the caddy service
+#  caddy:
+ #   image: caddy:2
+  #  container_name: caddy-molly
+   # restart: unless-stopped
+   # depends_on:
+    #  - mollysocket
+   # ports:
+    #  - "80:80"
+    #  - "443:443" # If you'd like to use a custom port, change the left port number to the port you want
+   # command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile"]
+   # volumes:
+    #  - ./Caddyfile:/etc/caddy/Caddyfile
+    #  - caddy-data:/data
+     # - caddy-config:/config
+   # networks:
+    #  - internal
+
+# networks:
+#  internal:
+
+#volumes:
+ # caddy-data:
+ # caddy-config:

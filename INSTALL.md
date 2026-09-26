@@ -1,12 +1,10 @@
 # Installation
 
-This file shows how to install and configure mollysocket **on your system using a systemd service**.
-
-**This should be relevant if you use docker**
+This file shows how to install and configure Mollysocket **on your system using a systemd service**.
 
 ## Install the binary with a dedicated user
 
-First of all, you need to install mollysocket on your system.
+First of all, you need to install Mollysocket on your system.
 
 #### Create a dedicated account
 
@@ -38,7 +36,6 @@ You can enable it `systemctl enable --now mollysocket`, the service is now activ
 
 *If you host your own Push server*, then explicitly add it to the allowed endpoints. In `/etc/mollysocket/conf.toml`, edit `allowed_endpoints = ['*', 'https://push.mydomain.tld']` (remove `'*'` if you will use your push server only). Then restart the service `systemctl restart mollysocket`.
 
-
 ## (Option A) Proxy server
 
 You will need to proxy everything from `/` to `http://127.0.0.1:8020/` (8020 is the value define in the systemd unit file for `$ROCKET_PORT`, it can be changed if needed).
@@ -56,6 +53,8 @@ For Nginx, it looks like:
         proxy_set_header X-Original-URL $uri;
     }
 ```
+
+**Note**: More reverse proxy examples are available in the reverse_proxy_samples directory in this repo.
 
 ## (Option B) Air gapped mode
 
