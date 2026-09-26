@@ -77,7 +77,7 @@ async fn add(uuid: &str, device_id: &u32, password: &str, endpoint: &str) {
         endpoint.to_string(),
     ));
     if let Err(e) = utils::ping(Url::from_str(endpoint).unwrap()).await {
-        log::warn!("Cound not ping the new connection (uuid={}): {e:?}", uuid);
+        log::warn!("Could not ping the new connection (uuid={}): {e:?}", uuid);
     }
     println!("Connection for {} added.", uuid);
 }
