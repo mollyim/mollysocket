@@ -21,6 +21,7 @@ struct Config {
     host: String,
     port: u16,
     webserver: bool,
+    metrics: bool,
     vapid_privkey: Option<String>,
     vapid_key_file: Option<String>,
     signal_env: SignalEnvironment,
@@ -42,6 +43,7 @@ impl Default for Config {
             host: String::from("127.0.0.1"),
             port: 8020,
             webserver: true,
+            metrics: true,
             vapid_privkey: None,
             vapid_key_file: None,
             signal_env: SignalEnvironment::Production,
@@ -75,6 +77,10 @@ pub fn is_uuid_valid(uuid: &str) -> bool {
 
 pub fn should_start_webserver() -> bool {
     get_cfg().webserver
+}
+
+pub fn should_mount_metrics() -> bool {
+    get_cfg().metrics
 }
 
 pub fn get_vapid_privkey() -> Option<&'static str> {
