@@ -234,10 +234,23 @@ You can get further troubleshooting information on this page: <https://unifiedpu
 
 **MollySocket never has any encryption key**
 
-MollySocket receives the credentials for a linked device and does not receive any encryption key. Which means:
-* Someone with access to MollySocket database can't change the identity key, to impersonate users. See [setKeys](https://github.com/signalapp/Signal-Server/blob/v8.67.0/service/src/main/java/org/whispersystems/textsecuregcm/controllers/KeysController.java#L111).
-* Someone with access to MollySocket database may be able to use the credentials of linked devices to spam the Signal server and hit the rate limits. I haven't checked if this would temporarily block the account or just the linked device. (Availability risk)
-* Someone with access to MollySocket database may be able to change some account field in a destructive way. For instance changing the account Name to something random. The cleartext will be random since these field are encrypted and require encryption keys to be properly encrypted.
+MollySocket receives the credentials for a linked device and does not receive any encryption key.
+
+You should trust your MollySocket server the same way you'd trust Signal Server:
+* It can't get your message or write on your behalf
+* It doens't have access to your contacts
+* It can remove your account,
+  in this case all your devices including the main one would be disconnected and you wouldn't be able to restore your account.
+* It can change your recovery key, to then take over your account,
+  in this case all your devices including the main one would be disconnected,
+  you wouldn't be able to restore your account,
+  and your safety number with all your contacts will change.
+* It can remove your registration lock,
+  which is supposed to prevent someone with your phone number to unregister you and create a new account for that number.
+
+Note: The capacity of actions of linked devices,
+and so of MollySocket servers,
+used to be smaller but this scope increased with the development of new features on the Signal server.
 
 ## Development
 
